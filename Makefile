@@ -51,6 +51,19 @@ db/migrations/down:
 # QUALITY CONTROL
 # ==================================================================================== #
 
+## test/setup: runs setup scripts for creating docker container
+.PHONY: test/setup
+test/setup:
+	./cmd/tests/book_setup.sh
+
+## test/data: test internal data
+##POSTGRES_TEST_DSN='postgres://postgres:postgres@localhost/testdb'
+.PHONY: test/data
+test/data:
+	./hack/test/docker-postgres.sh
+
+	@go test ./internal/data -v -dsn=${POSTGRES_TEST_DSN}
+
 ## audit: tidy dependencies and format, vet, and test all code
 .PHONY: audit
 audit: vendor

@@ -14,13 +14,50 @@ import (
 	"github.com/chris-a-kaiser-7/go-rest-template/internal/validator"
 )
 
-type ApiKey struct {
+type ApiKeyData struct {
 	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"-"`
 	UserId    int64     `json:"user_id"`
 	KeyName   string    `json:"key_name"`
-	KeyValue  []byte    `json:"key_value"`
+	Key       Secret    `json:"key_value"`
 }
+
+// length of encoded key
+// const keyLength = 64 //TODO: update this to be in config
+type keyLength int
+
+func (k keyLength) GetDecodedLen() int { return base64.StdEncoding.DecodedLen(int(k)) }
+func (k keyLength) GetEncodedLen() int { return int(k) }
+
+const keyLen64 keyLength = 64
+
+type Secret []byte
+
+func (s Secret) PopulateRand() {
+	rand.Read(s) //nolint:all rand.Read never returns error except on legacy linux systems
+}
+
+func (s Secret) PopulateFromBase64(src []byte) {
+	base64.StdEncoding.Decode(s, src) //nolint:all Decode won't return an error since the size is controlled
+}
+
+func (s Secret) GetHash() [64]byte {
+	return sha512.Sum512(s)
+}
+
+func (s Secret) GetBase64encoded(out []byte) {
+	base64.StdEncoding.Encode(out, s)
+}
+
+// func newSecret() Secret {
+// 	s := Secret{}
+// 	s = make([]byte, keyLen64.GetDecodedLen())
+// 	rand.Read(s) // rand.Read never returns error except on legacy linux systems
+// 	s.valueBase64 = make([]byte, keyLen64.GetEncodedLen())
+// 	base64.StdEncoding.Encode(s.valueBase64, s.value)
+// 	s.hash = sha512.Sum512(s.value)
+// 	return s
+// }
 
 // Wraper for sql.DB connection pool and logger
 type ApiKeyDataAccess struct {
@@ -29,12 +66,10 @@ type ApiKeyDataAccess struct {
 	ErrorLog *log.Logger
 }
 
-const keyLength = 64 //TODO: update this to be in config
-
 // Create will generate the apiKey value and hash update the apiKeyData with the value.
 // Param apiKeyData: apiKey data to create. Should contain userId and keyName.
 // Return Value is unhandled errors.
-func (m ApiKeyDataAccess) Create(apiKeyData ApiKey) error {
+func (m ApiKeyDataAccess) Create(apiKeyData *ApiKeyData) error {
 	query := `
 		INSERT INTO api_keys (user_id, key_name, key_hash) 
 		VALUES ($1, $2, $3) 
@@ -45,50 +80,42 @@ func (m ApiKeyDataAccess) Create(apiKeyData ApiKey) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	// Generate API key from crypto/rand then hash agianst SHA512.
-	unencodedKey := make([]byte, keyLength)
-	_, err := rand.Read(unencodedKey)
-	if err != nil {
-		return err //TODO: this should handle the error / retry
-	}
-	hashedKey := sha512.Sum512(unencodedKey)
+	newSecret := make(Secret, keyLen64.GetDecodedLen())
+	newSecret.PopulateRand()
+	hash := newSecret.GetHash()
 
 	// Do db query to insert the key
-	args := []interface{}{apiKeyData.UserId, apiKeyData.KeyName, hashedKey}
-	err = m.DB.QueryRowContext(ctx, query, args...).Scan(&apiKeyData.ID, &apiKeyData.CreatedAt)
+	args := []any{apiKeyData.UserId, apiKeyData.KeyName, hash[:]}
+	err := m.DB.QueryRowContext(ctx, query, args...).Scan(&apiKeyData.ID, &apiKeyData.CreatedAt)
 	if err != nil {
 		return err
 	}
+	apiKeyData.Key = make([]byte, keyLen64.GetEncodedLen())
+	newSecret.GetBase64encoded(apiKeyData.Key)
 
-	// Encode key in base64
-	key := make([]byte, keyLength)
-	base64.StdEncoding.Encode(key, unencodedKey)
-	apiKeyData.KeyValue = key
 	return nil
 }
 
 // Get will retrieve an api key with the provided keyValue as key by comparing key hashes
 // Return Value 1, apiKey data retrieved
 // Return Value is unhandled errors.
-func (m ApiKeyDataAccess) Get(key []byte) (ApiKey, error) {
+func (m ApiKeyDataAccess) Get(key []byte) (ApiKeyData, error) {
 	query := `
 		SELECT id, created_at, user_id, key_name
         	FROM api_keys
- 		WHERE key_hash = $1, activated = TRUE
+ 		WHERE key_hash = $1 AND activated = TRUE
  		`
 
 	// Create a context with a 3-second timeout.
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	// Take byte64 encoded key and decode it.
-	unencodedKey := make([]byte, keyLength)
-	base64.StdEncoding.Decode(unencodedKey, key)
-	hashedKey := sha512.Sum512(unencodedKey)
+	newSecret := make(Secret, keyLen64.GetDecodedLen())
+	newSecret.PopulateFromBase64(key)
+	hash := newSecret.GetHash()
 
-	// Do db query to check if the hashedKey exists
-	var apiKeyData ApiKey
-	err := m.DB.QueryRowContext(ctx, query, hashedKey).Scan(
+	var apiKeyData ApiKeyData
+	err := m.DB.QueryRowContext(ctx, query, hash[:]).Scan(
 		&apiKeyData.ID,
 		&apiKeyData.CreatedAt,
 		&apiKeyData.UserId,
@@ -96,9 +123,9 @@ func (m ApiKeyDataAccess) Get(key []byte) (ApiKey, error) {
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows): // Scan() will return a sql.ErrNoRows if there is no match
-			return ApiKey{}, ErrRecordNotFound
+			return ApiKeyData{}, ErrRecordNotFound
 		default:
-			return ApiKey{}, err
+			return ApiKeyData{}, err
 		}
 	}
 
@@ -147,18 +174,18 @@ func (m ApiKeyDataAccess) Deactivate(id int64) error {
 // Return Value 1, Slice of ApiKeys: This return value is the set of keys found with applied filters and pagination.
 // Return Value 2, Metadata: This is the metadata information that includes pagination information.
 // Return Value 3 is unhandled errors.
-func (m ApiKeyDataAccess) GetAll(user_id int, filters Filters) ([]ApiKey, Metadata, error) {
+func (m ApiKeyDataAccess) GetAll(user_id int, filters Filters) ([]ApiKeyData, Metadata, error) {
 	// Note count(*) OVER() is used for getting the total count of records returned.
 	// The (user_id = $1 OR $1 = '') clause allows for an optional filter by user_id.
 	// ORDER BY %s %s, id ASC interpolates the sort column and direction from
 	// the filter with id being secondary sort for matches.
-	// LIMIT $3 OFFSET $4 apply limit and offset from the filter.
+	// LIMIT $2 OFFSET $3 apply limit and offset from the filter.
 	query := fmt.Sprintf(`
 		SELECT count(*) OVER(), id, created_at, user_id, key_name
 		FROM api_keys
 		WHERE (user_id = $1 OR $1 = -1) AND (activated = TRUE)
 		ORDER BY %s %s, id ASC
-		LIMIT $3 OFFSET $4`,
+		LIMIT $2 OFFSET $3`,
 		filters.sortColumn(), filters.sortDirection())
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
@@ -180,9 +207,9 @@ func (m ApiKeyDataAccess) GetAll(user_id int, filters Filters) ([]ApiKey, Metada
 
 	// Parse the data from rows
 	totalRecords := 0
-	apiKeys := []ApiKey{}
+	apiKeys := []ApiKeyData{}
 	for rows.Next() {
-		var apiKey ApiKey
+		var apiKey ApiKeyData
 		err := rows.Scan(
 			&totalRecords,
 			&apiKey.ID,
@@ -209,7 +236,7 @@ func (m ApiKeyDataAccess) GetAll(user_id int, filters Filters) ([]ApiKey, Metada
 }
 
 // ValidateApiKey runs validation checks on the ApiKey type.
-func ValidateApiKey(v *validator.Validator, apiKey *ApiKey) {
+func ValidateApiKey(v *validator.Validator, apiKey *ApiKeyData) {
 	v.Check(apiKey.KeyName != "", "name", "must be provided")
 	v.Check(len(apiKey.KeyName) <= 500, "name", "must not be more than 500 bytes long")
 }

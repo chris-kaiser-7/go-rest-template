@@ -26,11 +26,11 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
 
 	// Movies handlers. Note, that these movie endpoints use the `requireActivatedUser` middleware.
-	router.HandlerFunc(http.MethodPost, "/v1/keys", app.requirePermissions("keys:add", app.createMovieHandler))
-	router.HandlerFunc(http.MethodPost, "/v1/keys/validate", app.createMovieHandler)
-	router.HandlerFunc(http.MethodGet, "/v1/keys", app.requirePermissions("keys:get", app.createMovieHandler))
-	router.HandlerFunc(http.MethodGet, "/v1/keys/:id", app.createMovieHandler)
-	router.HandlerFunc(http.MethodDelete, "/v1/keys/:id", app.requirePermissions("keys:delete", app.deleteMovieHandler))
+	// router.HandlerFunc(http.MethodPost, "/v1/keys", app.requirePermissions("keys:add", app.))
+	// router.HandlerFunc(http.MethodPost, "/v1/keys/validate", app.)
+	// router.HandlerFunc(http.MethodGet, "/v1/keys", app.requirePermissions("keys:get", app.))
+	// router.HandlerFunc(http.MethodGet, "/v1/keys/:id", app.createMovieHandler)
+	// router.HandlerFunc(http.MethodDelete, "/v1/keys/:id", app.requirePermissions("keys:delete", app.))
 
 	// Users handlers
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)

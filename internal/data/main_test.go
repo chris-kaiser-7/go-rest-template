@@ -27,25 +27,24 @@ func TestMain(m *testing.M) {
 	}
 	defer testDB.Close()
 
-	//TODO: conisder support for migrations.
 	if err := resetSchema(testDB); err != nil {
 		log.Fatalf("failed to reset schema: %v", err)
 	}
 
-	//TODO: figure out testing race conditions
 	daWrappers = InitDataAccess(testDB)
+	seedUserData()
 
 	os.Exit(m.Run())
 }
 
 func resetSchema(db *sql.DB) error {
 	_, err := db.Exec(`
-		DROP TABLE IF EXISTS users CASCADE;
-		DROP TABLE IF EXISTS tokens CASCADE;
-		DROP TABLE IF EXISTS permissions CASCADE;
-		DROP TABLE IF EXISTS users_permissions CASCADE;
-		DROP TABLE IF EXISTS api_key_usage CASCADE;
-		DROP TABLE IF EXISTS api_keys CASCADE;
+		DROP TABLE IF EXISTS users;
+		DROP TABLE IF EXISTS tokens;
+		DROP TABLE IF EXISTS permissions;
+		DROP TABLE IF EXISTS users_permissions;
+		DROP TABLE IF EXISTS api_key_usage;
+		DROP TABLE IF EXISTS api_keys;
 
 		CREATE TABLE IF NOT EXISTS users
 		(
@@ -61,7 +60,7 @@ func resetSchema(db *sql.DB) error {
 		CREATE TABLE IF NOT EXISTS tokens
 		(
 			hash    BYTEA PRIMARY KEY,
-			user_id BIGINT                      NOT NULL REFERENCES users ON DELETE CASCADE,
+			user_id BIGINT                      NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 			expiry  TIMESTAMP(0) WITH TIME ZONE NOT NULL,
 			scope   TEXT                        NOT NULL
 		);
@@ -74,8 +73,8 @@ func resetSchema(db *sql.DB) error {
 
 		CREATE TABLE IF NOT EXISTS users_permissions
 		(
-			user_id       BIGINT NOT NULL REFERENCES users ON DELETE CASCADE,
-			permission_id BIGINT NOT NULL REFERENCES permissions ON DELETE CASCADE,
+			user_id       BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+			permission_id BIGINT NOT NULL REFERENCES permissions(id) ON DELETE CASCADE,
 			PRIMARY KEY (user_id, permission_id)
 		);
 
@@ -86,22 +85,18 @@ func resetSchema(db *sql.DB) error {
 		(
 		  id         BIGSERIAL PRIMARY KEY,
 		  created_at TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW(),
-		  user_id    BIGINT NOT NULL,
+		  user_id    BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 		  key_name   TEXT NOT NULL,
-		  key_hash   INT UNIQUE NOT NULL,
-		  activated  BOOL DEFAULT TRUE,
-		  CONSTRAINT user_id FOREIGN KEY (id)
-		  REFERENCES users(id)
+		  key_hash   BYTEA UNIQUE NOT NULL,
+		  activated  BOOL DEFAULT TRUE
 		);
 
 		CREATE TABLE IF NOT EXISTS api_key_usage
 		(
 		  id            BIGSERIAL PRIMARY KEY,
-		  key_id        BIGINT NOT NULL,
+		  key_id        BIGINT NOT NULL REFERENCES api_keys(id) ON DELETE CASCADE,
 		  bucket_start  TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW(), --TODO: double check this
 		  usage_count   INT DEFAULT 0
-		  CONSTRAINT key_id FOREIGN KEY (id)
-		  REFERENCES api_keys(id)
 		);
 	`)
 	return err
@@ -121,7 +116,7 @@ func seedUserData() {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	err := daWrappers.Users.DB.QueryRowContext(ctx, query, args...)
+	err := daWrappers.Users.DB.QueryRowContext(ctx, query, args...).Err()
 	if err != nil {
 		log.Fatalf("failed to insert seed user: %v", err)
 	}
