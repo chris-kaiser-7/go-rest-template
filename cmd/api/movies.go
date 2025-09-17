@@ -273,7 +273,7 @@ func (app *application) listMoviesHandler(w http.ResponseWriter, r *http.Request
 	input.Sort = app.readStrings(qs, "sort", "id")
 
 	// Add the supported sort value for this endpoint to the sort safelist.
-	input.rilters.SortSafeList = []string{
+	input.SortSafeList = []string{
 		// ascending sort values
 		"id", "title", "year", "runtime",
 		// descending sort values

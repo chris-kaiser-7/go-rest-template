@@ -17,7 +17,7 @@ import (
 type ApiKey struct {
 	ID        int64     `json:"id"`
 	CreatedAt time.Time `json:"-"`
-	UserId    string    `json:"user_id"`
+	UserId    int64     `json:"user_id"`
 	KeyName   string    `json:"key_name"`
 	KeyValue  []byte    `json:"key_value"`
 }
@@ -34,7 +34,7 @@ const keyLength = 64 //TODO: update this to be in config
 // Create will generate the apiKey value and hash update the apiKeyData with the value.
 // Param apiKeyData: apiKey data to create. Should contain userId and keyName.
 // Return Value is unhandled errors.
-func (m ApiKeyDataAccess) Create(apiKeyData *ApiKey) error {
+func (m ApiKeyDataAccess) Create(apiKeyData ApiKey) error {
 	query := `
 		INSERT INTO api_keys (user_id, key_name, key_hash) 
 		VALUES ($1, $2, $3) 
@@ -70,7 +70,7 @@ func (m ApiKeyDataAccess) Create(apiKeyData *ApiKey) error {
 // Get will retrieve an api key with the provided keyValue as key by comparing key hashes
 // Return Value 1, apiKey data retrieved
 // Return Value is unhandled errors.
-func (m ApiKeyDataAccess) Get(key []byte) (*ApiKey, error) {
+func (m ApiKeyDataAccess) Get(key []byte) (ApiKey, error) {
 	query := `
 		SELECT id, created_at, user_id, key_name
         	FROM api_keys
@@ -96,13 +96,13 @@ func (m ApiKeyDataAccess) Get(key []byte) (*ApiKey, error) {
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows): // Scan() will return a sql.ErrNoRows if there is no match
-			return nil, ErrRecordNotFound
+			return ApiKey{}, ErrRecordNotFound
 		default:
-			return nil, err
+			return ApiKey{}, err
 		}
 	}
 
-	return &apiKeyData, nil
+	return apiKeyData, nil
 }
 
 // Delete will set activated to be false. for supplied apikey id.
@@ -142,12 +142,12 @@ func (m ApiKeyDataAccess) Deactivate(id int64) error {
 }
 
 // GetALl will return a slice of activated apiKeys and Metadata with provided optional user_id filter.
-// Param user_id: optional param for filter apikeys by specific user. "" will should all users.
+// Param user_id: optional param for filter apikeys by specific user id. -1 will should all users.
 // Param filters: filter struct that provides sort and pagination information.
 // Return Value 1, Slice of ApiKeys: This return value is the set of keys found with applied filters and pagination.
 // Return Value 2, Metadata: This is the metadata information that includes pagination information.
 // Return Value 3 is unhandled errors.
-func (m ApiKeyDataAccess) GetAll(user_id int, filters Filters) ([]*ApiKey, Metadata, error) {
+func (m ApiKeyDataAccess) GetAll(user_id int, filters Filters) ([]ApiKey, Metadata, error) {
 	// Note count(*) OVER() is used for getting the total count of records returned.
 	// The (user_id = $1 OR $1 = '') clause allows for an optional filter by user_id.
 	// ORDER BY %s %s, id ASC interpolates the sort column and direction from
@@ -156,7 +156,7 @@ func (m ApiKeyDataAccess) GetAll(user_id int, filters Filters) ([]*ApiKey, Metad
 	query := fmt.Sprintf(`
 		SELECT count(*) OVER(), id, created_at, user_id, key_name
 		FROM api_keys
-		WHERE (user_id = $1 OR $1 = '') AND (activated = TRUE)
+		WHERE (user_id = $1 OR $1 = -1) AND (activated = TRUE)
 		ORDER BY %s %s, id ASC
 		LIMIT $3 OFFSET $4`,
 		filters.sortColumn(), filters.sortDirection())
@@ -180,7 +180,7 @@ func (m ApiKeyDataAccess) GetAll(user_id int, filters Filters) ([]*ApiKey, Metad
 
 	// Parse the data from rows
 	totalRecords := 0
-	apiKeys := []*ApiKey{}
+	apiKeys := []ApiKey{}
 	for rows.Next() {
 		var apiKey ApiKey
 		err := rows.Scan(
@@ -193,7 +193,7 @@ func (m ApiKeyDataAccess) GetAll(user_id int, filters Filters) ([]*ApiKey, Metad
 		if err != nil {
 			return nil, Metadata{}, err
 		}
-		apiKeys = append(apiKeys, &apiKey)
+		apiKeys = append(apiKeys, apiKey)
 	}
 
 	// rows.Err() retrieves any error that was encountered during the iteration.
