@@ -12,14 +12,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/codeaucafe/snippetbox/greenlight/internal/data"
-	"github.com/codeaucafe/snippetbox/greenlight/internal/jsonlog"
-	"github.com/codeaucafe/snippetbox/greenlight/internal/mailer"
-	"github.com/codeaucafe/snippetbox/greenlight/internal/vcs"
+	"github.com/chris-a-kaiser-7/go-rest-template/internal/data"
+	"github.com/chris-a-kaiser-7/go-rest-template/internal/jsonlog"
+	"github.com/chris-a-kaiser-7/go-rest-template/internal/mailer"
+	"github.com/chris-a-kaiser-7/go-rest-template/internal/vcs"
 
-	// Import the pq driver so that it can register itself with the database/sql
-	// package. Note that we alias this import to the blank identifier, to stop the Go
-	// compiler complaining that the package isn't being used.
 	_ "github.com/lib/pq"
 )
 
@@ -64,7 +61,7 @@ type config struct {
 type application struct {
 	config config
 	logger *jsonlog.Logger
-	models data.Models
+	models data.DataAccessWrapers
 	mailer mailer.Mailer
 	wg     sync.WaitGroup
 }

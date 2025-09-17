@@ -8,7 +8,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/codeaucafe/snippetbox/greenlight/internal/validator"
+	"github.com/chris-a-kaiser-7/go-rest-template/internal/validator"
 	"github.com/lib/pq"
 )
 

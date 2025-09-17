@@ -23,14 +23,14 @@ func (p Permissions) Include(code string) bool {
 	return false
 }
 
-type PermissionModel struct {
+type PermissionDataAccess struct {
 	DB       *sql.DB
 	InfoLog  *log.Logger
 	ErrorLog *log.Logger
 }
 
 // GetAllForUser returns all permission codes for a specific user in a Permissions slice.
-func (m PermissionModel) GetAllForUser(userID int64) (Permissions, error) {
+func (m PermissionDataAccess) GetAllForUser(userID int64) (Permissions, error) {
 	query := `
 		SELECT permissions.code
 		FROM permissions
@@ -73,7 +73,7 @@ func (m PermissionModel) GetAllForUser(userID int64) (Permissions, error) {
 }
 
 // AddForUser adds the provided codes for a specific user.
-func (m PermissionModel) AddForUser(userID int64, codes ...string) error {
+func (m PermissionDataAccess) AddForUser(userID int64, codes ...string) error {
 	query := `
 		INSERT INTO users_permissions
 		SELECT $1, permissions.id FROM permissions WHERE permissions.code = ANY($2)

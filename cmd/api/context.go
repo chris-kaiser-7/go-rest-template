@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/codeaucafe/snippetbox/greenlight/internal/data"
+	"github.com/chris-a-kaiser-7/go-rest-template/internal/data"
 )
 
 type contextKey string

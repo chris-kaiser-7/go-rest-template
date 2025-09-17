@@ -9,7 +9,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/codeaucafe/snippetbox/greenlight/internal/validator"
+	"github.com/chris-a-kaiser-7/go-rest-template/internal/validator"
 )
 
 // ScopeActivation defines the "activate" scope for scope in the tokens table.
@@ -29,9 +29,9 @@ type (
 		Scope     string    `json:"-"`
 	}
 
-	// TokenModel struct wraps a sql.DB connection pool and allows us to work with the Token struct
+	// TokenDataAccess struct wraps a sql.DB connection pool and allows us to work with the Token struct
 	// type and the tokens table in our database.
-	TokenModel struct {
+	TokenDataAccess struct {
 		DB       *sql.DB
 		InfoLog  *log.Logger
 		ErrorLog *log.Logger
@@ -39,7 +39,7 @@ type (
 )
 
 // New creates a new token and inserts the token record into the tokens table.
-func (m TokenModel) New(userID int64, ttl time.Duration, scope string) (*Token, error) {
+func (m TokenDataAccess) New(userID int64, ttl time.Duration, scope string) (*Token, error) {
 	token, err := generateToken(userID, ttl, scope)
 	if err != nil {
 		return nil, err
@@ -51,7 +51,7 @@ func (m TokenModel) New(userID int64, ttl time.Duration, scope string) (*Token, 
 }
 
 // Insert inserts a new token record into the tokens table.
-func (m TokenModel) Insert(token *Token) error {
+func (m TokenDataAccess) Insert(token *Token) error {
 	query := `
 		INSERT INTO tokens (hash, user_id, expiry, scope)
 		VALUES ($1, $2, $3, $4)
@@ -67,7 +67,7 @@ func (m TokenModel) Insert(token *Token) error {
 }
 
 // DeleteAllForUser deletes all tokens for a specific user and scope.
-func (m TokenModel) DeleteAllForUser(scope string, userID int64) error {
+func (m TokenDataAccess) DeleteAllForUser(scope string, userID int64) error {
 	query := `
 		DELETE FROM tokens
 		WHERE scope = $1 AND user_id = $2

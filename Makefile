@@ -22,12 +22,12 @@ confirm:
 ## run/api: run the cmd/api application
 .PHONY: run/api
 run/api:
-	@go run ./cmd/api -db-dsn=${GREENLIGHT_DB_DSN}
+	@go run ./cmd/api -db-dsn=${DB_DSN}
 
 ## db/psql: connect to the database using psql
-.PHONY: db/sql
+.PHONY: db/psql
 db/psql:
-	psql ${GREENLIGHT_DB_DSN}
+	psql ${DB_DSN}
 
 ## db/migrations/new name=$1: create a new database migration
 .PHONY: db/migrations/new
@@ -39,7 +39,13 @@ db/migrations/new:
 .PHONY: db/migrations/up
 db/migrations/up: confirm
 	@echo 'Running up migrations...'
-	migrate -path="./migrations" -database "postgres://greenlight:${DB_PW}@localhost/greenlight?sslmode=disable" up
+	migrate -path="./migrations" -database ${DB_DSN} up
+
+## db/migrations/down: apply all down database migrations
+.PHONY: db/migrations/down
+db/migrations/down:
+	@echo 'Running down migrations...'
+	migrate -path="./migrations" -database ${DB_DSN} down
 
 # ==================================================================================== #
 # QUALITY CONTROL
@@ -80,22 +86,22 @@ build/api:
 # PRODUCTION
 # ==================================================================================== #
 
-production_host_ip = '144.126.210.226'
+PRODUCTION_HOST_IP = '144.126.210.226'
 
 ## production/connect: connect to the production server
 .PHONY: production/connect
 production/connect:
-	ssh greenlight@${production_host_ip}
+	ssh greenlight@${PRODUCTION_HOST_IP}
 
 ## production/deploy/api: deploy the api to production
 .PHONY: production/deploy/api
 production/deploy/api:
-	rsync -P ./bin/linux_amd64/api greenlight@${production_host_ip}:~
-	rsync -rP --delete ./migrations greenlight@${production_host_ip}:~
-	rsync -P ./remote/production/api.service greenlight@${production_host_ip}:~
-	rsync -P ./remote/production/Caddyfile greenlight@${production_host_ip}:~
-	ssh -t greenlight@${production_host_ip} '\
-		migrate -path ~/migrations -database $$GREENLIGHT_DB_DSN up \
+	rsync -P ./bin/linux_amd64/api greenlight@${PRODUCTION_HOST_IP}:~
+	rsync -rP --delete ./migrations greenlight@${PRODUCTION_HOST_IP}:~
+	rsync -P ./remote/production/api.service greenlight@${PRODUCTION_HOST_IP}:~
+	rsync -P ./remote/production/Caddyfile greenlight@${PRODUCTION_HOST_IP}:~
+	ssh -t greenlight@${PRODUCTION_HOST_IP} '\
+		migrate -path ~/migrations -database $$DB_DSN up \
         && sudo mv ~/api.service /etc/systemd/system/ \
         && sudo systemctl enable api \
         && sudo systemctl restart api \

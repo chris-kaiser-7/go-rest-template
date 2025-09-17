@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/codeaucafe/snippetbox/greenlight/internal/data"
-	"github.com/codeaucafe/snippetbox/greenlight/internal/validator"
+	"github.com/chris-a-kaiser-7/go-rest-template/internal/data"
+	"github.com/chris-a-kaiser-7/go-rest-template/internal/validator"
 )
 
 // createMovieHandler handles the "POST /v1/movies" endpoint and returns a JSON response of
@@ -265,15 +265,15 @@ func (app *application) listMoviesHandler(w http.ResponseWriter, r *http.Request
 	// Ge the page and page_size query string value as integers. Notice that we set the default
 	// page value to 1 and default page_size to 20, and that we pass the validator instance
 	// as the final argument.
-	input.Filters.Page = app.readInt(qs, "page", 1, v)
-	input.Filters.PageSize = app.readInt(qs, "page_size", 20, v)
+	input.Page = app.readInt(qs, "page", 1, v)
+	input.PageSize = app.readInt(qs, "page_size", 20, v)
 
 	// Extract the sort query string value, falling back to "id" if it is not provided
 	// by the client (which will imply an ascending sort on movie ID).
-	input.Filters.Sort = app.readStrings(qs, "sort", "id")
+	input.Sort = app.readStrings(qs, "sort", "id")
 
 	// Add the supported sort value for this endpoint to the sort safelist.
-	input.Filters.SortSafeList = []string{
+	input.rilters.SortSafeList = []string{
 		// ascending sort values
 		"id", "title", "year", "runtime",
 		// descending sort values

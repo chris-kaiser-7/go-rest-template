@@ -14,8 +14,8 @@ import (
 	"github.com/tomasen/realip"
 	"golang.org/x/time/rate"
 
-	"github.com/codeaucafe/snippetbox/greenlight/internal/data"
-	"github.com/codeaucafe/snippetbox/greenlight/internal/validator"
+	"github.com/chris-a-kaiser-7/go-rest-template/internal/data"
+	"github.com/chris-a-kaiser-7/go-rest-template/internal/validator"
 )
 
 // recoverPanic is middleware that recovers from a panic by responding with a 500 Internal Server

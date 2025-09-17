@@ -22,7 +22,7 @@ func TestHealthcheck(t *testing.T) {
 	"status": "available",
 	"system_info": {
 		"environment": "testing",
-		"version": "1.0.0"
+		"version": "-"
 	}
 }
 `

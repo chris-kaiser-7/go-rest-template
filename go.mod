@@ -1,4 +1,4 @@
-module github.com/codeaucafe/snippetbox/greenlight
+module github.com/chris-a-kaiser-7/go-rest-template
 
 go 1.18
 
