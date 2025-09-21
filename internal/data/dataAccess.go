@@ -18,6 +18,7 @@ var (
 // DataAccessWrapers struct is a single convenient container to hold and represent all our database access wrappers.
 type DataAccessWrapers struct {
 	ApiKeys     ApiKeyDataAccess
+	ApiKeyUsage ApiKeyUsageDataAccess
 	Users       UserDataAccess
 	Tokens      TokenDataAccess
 	Permissions PermissionDataAccess
@@ -28,6 +29,11 @@ func InitDataAccess(db *sql.DB) DataAccessWrapers {
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
 	return DataAccessWrapers{
 		ApiKeys: ApiKeyDataAccess{
+			DB:       db,
+			InfoLog:  infoLog,
+			ErrorLog: errorLog,
+		},
+		ApiKeyUsage: ApiKeyUsageDataAccess{
 			DB:       db,
 			InfoLog:  infoLog,
 			ErrorLog: errorLog,

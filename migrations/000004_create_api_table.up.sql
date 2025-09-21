@@ -14,10 +14,8 @@ CREATE TABLE IF NOT EXISTS api_key_usage
 (
   id            BIGSERIAL PRIMARY KEY,
   key_id        BIGINT NOT NULL,
-  bucket_start  TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW(), --TODO: double check this
-  usage_count   INT DEFAULT 0
+  bucket_start  TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW(),
+  usage_count   INT DEFAULT 1 
   CONSTRAINT key_id FOREIGN KEY (id)
   REFERENCES api_keys(id)
 );
-
-

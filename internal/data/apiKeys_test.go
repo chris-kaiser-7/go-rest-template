@@ -1,51 +1,54 @@
 package data
 
 import (
-	"fmt"
 	"testing"
 )
 
-// type ApiKey struct {
-// 	ID        int64     `json:"id"`
-// 	CreatedAt time.Time `json:"-"`
-// 	UserId    string    `json:"user_id"`
-// 	KeyName   string    `json:"key_name"`
-// 	Key  []byte    `json:"key_value"`
-// }
-
-func TestApiKey_CreateValid(t *testing.T) {
-	testKey := ApiKeyData{UserId: 1, KeyName: "testKey1"}
-	err := daWrappers.ApiKeys.Create(&testKey)
+func TestApiKey_GetSanity(t *testing.T) {
+	setupSeedApiKey()
+	testData, err := apiKeySeed.da.Get(apiKeySeed.v.Key)
 	if err != nil {
-		t.Fatalf("failed to create testKey1: %v", err)
+		t.Fatalf("failed to get key: %v", err)
 	}
-	if len(testKey.Key) == 0 {
-		t.Fatalf("expected Key to contain apikey but got %s", testKey.Key)
+	if len(testData.Key) == 0 {
+		t.Fatalf("expected Key to contain apikey but got %s", testData.Key)
+	}
+}
+
+func TestApiKey_CreateSanity(t *testing.T) {
+	setupSeedUserForApiKey()
+	err := apiKeySeed.da.Create(&apiKeySeed.v)
+	if err != nil {
+		t.Fatalf("failed to create key: %v", err)
+	}
+	if len(apiKeySeed.v.Key) == 0 {
+		t.Fatalf("expected Key to contain apikey but got %s", apiKeySeed.v.Key)
 	}
 }
 
 func TestApiKey_CreateGetValid(t *testing.T) {
-	testKey := ApiKeyData{UserId: 1, KeyName: "testKey2"}
-	err := daWrappers.ApiKeys.Create(&testKey)
+	setupSeedUserForApiKey()
+	err := apiKeySeed.da.Create(&apiKeySeed.v)
 	if err != nil {
-		t.Fatalf("failed to create testKey2: %v", err)
+		t.Fatalf("failed to create key: %v", err)
 	}
-	fetchedKey, err := daWrappers.ApiKeys.Get(testKey.Key)
+	fetchedKey, err := apiKeySeed.da.Get(apiKeySeed.v.Key)
 	if err != nil {
-		t.Fatalf("failed to fetch key with value %s: %v", testKey.Key, err)
+		t.Fatalf("failed to fetch key with value %s: %v", apiKeySeed.v.Key, err)
 	}
-	if fetchedKey.KeyName != "testKey2" {
-		t.Fatalf("expected feteched key to have keyName = testKey2, but got %s", fetchedKey.KeyName)
+	if fetchedKey.KeyName != apiKeySeed.mockDefault.KeyName {
+		t.Fatalf("expected feteched key to have keyName == %s, but got %s", apiKeySeed.mockDefault.KeyName, fetchedKey.KeyName)
 	}
-	if fetchedKey.UserId != 1 {
-		t.Fatalf("expected feteched key to have userId = 1 testKey2, but got %s", fetchedKey.KeyName)
+	if fetchedKey.UserId != userSeed.v.ID {
+		t.Fatalf("expected feteched key to have userId == %d, but got %d", userSeed.v.ID, fetchedKey.UserId)
 	}
 }
 
 func TestApiKey_GetInvalid(t *testing.T) {
-	badKey := make(Secret, keyLen64.GetDecodedLen())
+	setupSeedApiKey()
+	badKey := make(Secret, key64.DecodedLen)
 	badKey.PopulateRand()
-	badKey64 := make([]byte, keyLen64.GetEncodedLen())
+	badKey64 := make([]byte, key64.EncodedLen)
 	badKey.GetBase64encoded(badKey64)
 
 	_, err := daWrappers.ApiKeys.Get(badKey64)
@@ -55,13 +58,8 @@ func TestApiKey_GetInvalid(t *testing.T) {
 }
 
 func TestApiKey_CreateGetAll(t *testing.T) {
-	for i := 0; i < 10; i++ {
-		testKey := ApiKeyData{UserId: 1, KeyName: fmt.Sprintf("testKeyBulk-%d", i)}
-		err := daWrappers.ApiKeys.Create(&testKey)
-		if err != nil {
-			t.Fatalf("failed to create testKeyBulk-%d: %v", i, err)
-		}
-	}
+	setupSeedUserForApiKey()
+	apiKeySeed.seedCount(userSeed.v.ID, 10)
 
 	filter := Filters{
 		Page:         1,
@@ -71,9 +69,9 @@ func TestApiKey_CreateGetAll(t *testing.T) {
 	}
 
 	fetchedKeys, metadata, err := daWrappers.ApiKeys.GetAll(-1, filter)
-	for _, key := range fetchedKeys {
-		t.Log(key)
-	}
+	// for _, key := range fetchedKeys {
+	// 	t.Log(key)
+	// }
 	if err != nil {
 		t.Fatalf("failed GetAll keys: %v", err)
 	}
@@ -81,3 +79,13 @@ func TestApiKey_CreateGetAll(t *testing.T) {
 		t.Fatalf("expected len(fetchedKeys) == metadata.TotalRecords, got %d != %d", len(fetchedKeys), metadata.TotalRecords)
 	}
 }
+
+// seed.clean()
+// seed.seedCount(10)
+// for t := range seed.tGroup {
+//
+// }
+//
+// if len(seed.t.Key) == 0 {
+// 	t.Fatalf("expected Key to contain apikey but got %s", testData.Key)
+// }

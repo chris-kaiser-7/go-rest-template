@@ -1,20 +1,23 @@
 package data
 
 import (
-	"context"
 	"database/sql"
 	"flag"
 	"log"
 	"os"
 	"testing"
-	"time"
 )
 
-var testDB *sql.DB
+const (
+	userTableName   = "users"
+	apiKeyTableName = "api_keys"
+)
 
-var daWrappers DataAccessWrapers
-
-var dsn string
+var (
+	testDB     *sql.DB
+	daWrappers DataAccessWrapers
+	dsn        string
+)
 
 func TestMain(m *testing.M) {
 	var err error
@@ -32,7 +35,6 @@ func TestMain(m *testing.M) {
 	}
 
 	daWrappers = InitDataAccess(testDB)
-	seedUserData()
 
 	os.Exit(m.Run())
 }
@@ -100,24 +102,4 @@ func resetSchema(db *sql.DB) error {
 		);
 	`)
 	return err
-}
-
-func seedUserData() {
-	query := `
-		INSERT INTO users (name, email, password_hash, activated)
-		VALUES ($1, $2, $3, $4)
-		RETURNING id, created_at, version
-		`
-
-	userPass := password{}
-	userPass.Set("asdf1235")
-	args := []interface{}{"TestUser1", "validEmail@gmail.com", userPass.hash, true}
-
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
-
-	err := daWrappers.Users.DB.QueryRowContext(ctx, query, args...).Err()
-	if err != nil {
-		log.Fatalf("failed to insert seed user: %v", err)
-	}
 }

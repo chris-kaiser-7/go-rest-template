@@ -6,7 +6,9 @@ import (
 )
 
 func TestToken_New(t *testing.T) {
-	_, err := daWrappers.Tokens.New(1, 24*time.Hour, ScopeAuthentication)
+	userSeed.clean()
+	userSeed.seed()
+	_, err := daWrappers.Tokens.New(userSeed.v.ID, 24*time.Hour, ScopeAuthentication)
 	if err != nil {
 		t.Fatalf("Failed to insert token: %v", err)
 	}

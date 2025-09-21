@@ -1,8 +1,1 @@
---TODO: determine best indexes to add and add them
-
---
--- CREATE INDEX IF NOT EXISTS movies_title_idx
--- 	ON movies USING GIN (to_tsvector('simple', title));
---
--- CREATE INDEX IF NOT EXISTS movies_genres_idx
--- 	ON movies USING GIN (genres);
+CREATE INDEX IF NOT EXISTS ix_apikey_id_ts ON api_key_usage (key_id, bucket_start DESC); 
