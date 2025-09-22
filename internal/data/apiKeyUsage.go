@@ -27,7 +27,7 @@ func (da ApiKeyUsageDataAccess) logUsage(keyId int64) error {
 	updateQuery := `
 		UPDATE api_key_usage
 		SET usage_count = usage_count + 1
-		WHERE id = $1 
+		WHERE key_id = $1 
 		`
 	insertQuery := `
 		INSERT INTO api_key_usage (key_id) 
@@ -38,20 +38,34 @@ func (da ApiKeyUsageDataAccess) logUsage(keyId int64) error {
 
 	keyUsage := ApiKeyUsage{KeyId: keyId}
 	err := da.GetLatestUsageOfKey(&keyUsage)
-	if err != ErrRecordNotFound {
+	if err != nil && err != ErrRecordNotFound {
 		return err
 	}
 
 	// Insert a new bucket if a recent bucket is not found
 	if err == ErrRecordNotFound || keyUsage.BucketStart.Add(usageResolution).Before(time.Now()) {
-		_, err := da.DB.ExecContext(ctx, insertQuery, keyUsage.KeyId)
+		result, err := da.DB.ExecContext(ctx, insertQuery, keyUsage.KeyId)
 		if err != nil {
 			return err
 		}
-	} else {
-		_, err := da.DB.ExecContext(ctx, updateQuery, keyUsage.KeyId)
+		rowCount, err := result.RowsAffected()
 		if err != nil {
 			return err
+		}
+		if rowCount == 0 {
+			return ErrRecordNotFound
+		}
+	} else {
+		result, err := da.DB.ExecContext(ctx, updateQuery, keyUsage.KeyId)
+		if err != nil {
+			return err
+		}
+		rowCount, _ := result.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rowCount == 0 {
+			return ErrRecordNotFound
 		}
 	}
 
@@ -69,10 +83,12 @@ func (da ApiKeyUsageDataAccess) GetLatestUsageOfKey(keyUsage *ApiKeyUsage) error
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	//da.InfoLog.Printf("prefetche usage: %#v", keyUsage)
 	err := da.DB.QueryRowContext(ctx, query, keyUsage.KeyId).Scan(
 		&keyUsage.Id,
 		&keyUsage.BucketStart,
 		&keyUsage.UsageCount)
+	//da.InfoLog.Printf("fetched usage: %#v", keyUsage)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

@@ -22,6 +22,9 @@ var (
 		},
 		da: &daWrappers.ApiKeys,
 	}
+	apiKeyUsageSeed = ApiKeyUsageTestSeed{
+		da: &daWrappers.ApiKeyUsage,
+	}
 )
 
 // Default boilerplate for cleaning table
@@ -143,6 +146,14 @@ func (s *ApiKeyTestSeed) seedCount(fkeyUserId int64, count int) {
 	}
 }
 
+type ApiKeyUsageTestSeed struct {
+	da *ApiKeyUsageDataAccess
+}
+
+func (s *ApiKeyUsageTestSeed) clean() {
+	clean(apiKeyTableName, s.da.DB)
+}
+
 // Boilerplate for seed calls
 
 func setupSeedUserForApiKey() {
@@ -155,6 +166,14 @@ func setupSeedUserForApiKey() {
 func setupSeedApiKey() {
 	userSeed.clean()
 	apiKeySeed.clean()
+	userSeed.seed()
+	apiKeySeed.seed(userSeed.v.ID)
+}
+
+func setupSeedApiKeyUsage() {
+	userSeed.clean()
+	apiKeySeed.clean()
+	apiKeyUsageSeed.clean()
 	userSeed.seed()
 	apiKeySeed.seed(userSeed.v.ID)
 }

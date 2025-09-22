@@ -9,8 +9,9 @@ import (
 )
 
 const (
-	userTableName   = "users"
-	apiKeyTableName = "api_keys"
+	userTableName        = "users"
+	apiKeyTableName      = "api_keys"
+	apiKeyUsageTableName = "api_key_usage"
 )
 
 var (
@@ -98,7 +99,7 @@ func resetSchema(db *sql.DB) error {
 		  id            BIGSERIAL PRIMARY KEY,
 		  key_id        BIGINT NOT NULL REFERENCES api_keys(id) ON DELETE CASCADE,
 		  bucket_start  TIMESTAMP(0) WITH TIME ZONE NOT NULL DEFAULT NOW(), --TODO: double check this
-		  usage_count   INT DEFAULT 0
+		  usage_count   INT DEFAULT 1
 		);
 	`)
 	return err
