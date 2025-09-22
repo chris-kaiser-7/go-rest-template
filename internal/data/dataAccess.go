@@ -27,17 +27,20 @@ type DataAccessWrapers struct {
 func InitDataAccess(db *sql.DB) DataAccessWrapers {
 	infoLog := log.New(os.Stdout, "INFO\t", log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR\t", log.Ldate|log.Ltime|log.Lshortfile)
+	usageDa := ApiKeyUsageDataAccess{
+		DB:       db,
+		InfoLog:  infoLog,
+		ErrorLog: errorLog,
+	}
+
 	return DataAccessWrapers{
 		ApiKeys: ApiKeyDataAccess{
 			DB:       db,
 			InfoLog:  infoLog,
 			ErrorLog: errorLog,
+			usageDa:  &usageDa,
 		},
-		ApiKeyUsage: ApiKeyUsageDataAccess{
-			DB:       db,
-			InfoLog:  infoLog,
-			ErrorLog: errorLog,
-		},
+		ApiKeyUsage: usageDa,
 		Users: UserDataAccess{
 			DB:       db,
 			InfoLog:  infoLog,

@@ -57,12 +57,19 @@ test/setup:
 	./cmd/tests/book_setup.sh
 
 ## test/data: test internal data
-##POSTGRES_TEST_DSN='postgres://postgres:postgres@localhost/testdb'
 .PHONY: test/data
 test/data:
 	./hack/test/docker-postgres.sh
 
 	@go test ./internal/data -v -dsn=${POSTGRES_TEST_DSN}
+
+## test/cmd: test api
+.PHONY: test/api
+test/api:
+	./hack/test/docker-postgres.sh
+
+	@go test ./cmd/api -v -dsn=${POSTGRES_TEST_DSN}
+
 
 ## audit: tidy dependencies and format, vet, and test all code
 .PHONY: audit

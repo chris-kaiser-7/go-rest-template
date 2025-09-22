@@ -26,11 +26,16 @@ func (app *application) routes() http.Handler {
 	router.Handler(http.MethodGet, "/debug/vars", expvar.Handler())
 
 	// Movies handlers. Note, that these movie endpoints use the `requireActivatedUser` middleware.
-	// router.HandlerFunc(http.MethodPost, "/v1/keys", app.requirePermissions("keys:add", app.))
-	// router.HandlerFunc(http.MethodPost, "/v1/keys/validate", app.)
-	// router.HandlerFunc(http.MethodGet, "/v1/keys", app.requirePermissions("keys:get", app.))
-	// router.HandlerFunc(http.MethodGet, "/v1/keys/:id", app.createMovieHandler)
-	// router.HandlerFunc(http.MethodDelete, "/v1/keys/:id", app.requirePermissions("keys:delete", app.))
+	router.HandlerFunc(http.MethodPost, "/v1/keys", app.requirePermissions("keys:add", app.createApiKeyHandler))
+	router.HandlerFunc(http.MethodPost, "/v1/keys/validate", app.validateApiKeyHandler)
+
+	router.HandlerFunc(http.MethodGet, "/v1/keys", app.requirePermissions("keys:get", app.getAllApiKeyUsageHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/keys/:id", app.requirePermissions("keys:get", app.getApiKeyHandler))
+	router.HandlerFunc(http.MethodDelete, "/v1/keys/:id", app.requirePermissions("keys:delete", app.deactivateApiKeyHandler))
+
+	router.HandlerFunc(http.MethodGet, "/v1/admin/keys", app.requirePermissions("keys:admin_get", app.adminGetAllApiKeyHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/admin/keys/:id", app.requirePermissions("keys:admin_get", app.adminGetApiKeyHandler))
+	router.HandlerFunc(http.MethodDelete, "/v1/admin/keys/:id", app.requirePermissions("keys:admin_delete", app.deactivateApiKeyHandler))
 
 	// Users handlers
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)

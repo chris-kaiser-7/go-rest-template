@@ -60,7 +60,7 @@ func (da ApiKeyUsageDataAccess) logUsage(keyId int64) error {
 		if err != nil {
 			return err
 		}
-		rowCount, _ := result.RowsAffected()
+		rowCount, err := result.RowsAffected()
 		if err != nil {
 			return err
 		}
@@ -100,7 +100,11 @@ func (da ApiKeyUsageDataAccess) GetLatestUsageOfKey(keyUsage *ApiKeyUsage) error
 	return nil
 }
 
-func (da ApiKeyUsageDataAccess) GetUsageData(user_id int64) (int, error) {
+func (da ApiKeyUsageDataAccess) GetAllUsageData() (int, error) {
+	return da.GetUsageDataByUser(-1)
+}
+
+func (da ApiKeyUsageDataAccess) GetUsageDataByUser(user_id int64) (int, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
@@ -113,6 +117,29 @@ func (da ApiKeyUsageDataAccess) GetUsageData(user_id int64) (int, error) {
 
 	usageCount := 0
 	err := da.DB.QueryRowContext(ctx, query, user_id).Scan(&usageCount)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return 0, nil
+		default:
+			return -1, err
+		}
+	}
+	return usageCount, nil
+}
+
+func (da ApiKeyUsageDataAccess) GetUsageDataByKey(key_id int64) (int, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	query := `
+		SELECT COALESCE(SUM(a.usage_count), 0)
+		FROM api_key_usage
+		WHERE (key_id = $1)
+		`
+
+	usageCount := 0
+	err := da.DB.QueryRowContext(ctx, query, key_id).Scan(&usageCount)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):

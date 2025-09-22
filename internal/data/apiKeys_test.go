@@ -6,7 +6,7 @@ import (
 
 func TestApiKey_GetSanity(t *testing.T) {
 	setupSeedApiKey()
-	testData, err := apiKeySeed.da.Get(apiKeySeed.v.Key)
+	testData, err := apiKeySeed.da.Validate(apiKeySeed.v.Key)
 	if err != nil {
 		t.Fatalf("failed to get key: %v", err)
 	}
@@ -32,7 +32,7 @@ func TestApiKey_CreateGetValid(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create key: %v", err)
 	}
-	fetchedKey, err := apiKeySeed.da.Get(apiKeySeed.v.Key)
+	fetchedKey, err := apiKeySeed.da.Validate(apiKeySeed.v.Key)
 	if err != nil {
 		t.Fatalf("failed to fetch key with value %s: %v", apiKeySeed.v.Key, err)
 	}
@@ -51,7 +51,7 @@ func TestApiKey_GetInvalid(t *testing.T) {
 	badKey64 := make([]byte, key64.EncodedLen)
 	badKey.GetBase64encoded(badKey64)
 
-	_, err := daWrappers.ApiKeys.Get(badKey64)
+	_, err := daWrappers.ApiKeys.Validate(badKey64)
 	if err != ErrRecordNotFound {
 		t.Fatalf("expected err ErrRecordNotFound but got: %v", err)
 	}

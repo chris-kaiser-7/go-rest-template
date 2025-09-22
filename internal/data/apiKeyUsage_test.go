@@ -23,7 +23,7 @@ func TestApiKeyUsage_GetLatestKeySanity(t *testing.T) {
 
 func TestApiKeyUsage_GetUsageData(t *testing.T) {
 	setupSeedApiKeyUsage()
-	count, err := daWrappers.ApiKeyUsage.GetUsageData(-1)
+	count, err := daWrappers.ApiKeyUsage.GetUsageDataByUser(-1)
 	if err != nil {
 		t.Fatalf("failed to get test usage data: %v", err)
 	}

@@ -23,6 +23,7 @@ type ApiKeyDataAccess struct {
 	DB       *sql.DB
 	InfoLog  *log.Logger
 	ErrorLog *log.Logger
+	usageDa  *ApiKeyUsageDataAccess
 }
 
 // Create will generate the apiKey value and hash update the apiKeyData with the value.
@@ -55,10 +56,10 @@ func (da ApiKeyDataAccess) Create(apiKeyData *ApiKeyData) error {
 	return nil
 }
 
-// Get will retrieve an api key with the provided keyValue as key by comparing key hashes
+// Validate will retrieve an api key with the provided keyValue as key by comparing key hashes
 // Return Value 1, apiKey data retrieved
 // Return Value is unhandled errors.
-func (da ApiKeyDataAccess) Get(key []byte) (ApiKeyData, error) {
+func (da ApiKeyDataAccess) Validate(key []byte) (ApiKeyData, error) {
 	query := `
 		SELECT id, created_at, user_id, key_name
         	FROM api_keys
@@ -88,6 +89,10 @@ func (da ApiKeyDataAccess) Get(key []byte) (ApiKeyData, error) {
 		}
 	}
 
+	err = da.usageDa.logUsage(apiKeyData.Id)
+	if err != nil {
+		return ApiKeyData{}, err
+	}
 	return apiKeyData, nil
 }
 
@@ -127,13 +132,35 @@ func (da ApiKeyDataAccess) Deactivate(id int64) error {
 	return nil
 }
 
+func (da ApiKeyDataAccess) Get(key_id int64) (ApiKeyData, error) {
+	query := `
+		SELECT created_at, user_id, key_name
+		FROM api_keys
+		WHERE key_id = $1 AND activated = TRUE
+		`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	apiKeyData := ApiKeyData{Id: key_id}
+	err := da.DB.QueryRowContext(ctx, query, apiKeyData.Id).Scan(
+		&apiKeyData.CreatedAt,
+		&apiKeyData.UserId,
+		&apiKeyData.KeyName)
+	if err != nil {
+		return ApiKeyData{}, err
+	}
+
+	return apiKeyData, nil
+}
+
 // GetALl will return a slice of activated apiKeys and Metadata with provided optional user_id filter.
 // Param user_id: optional param for filter apikeys by specific user id. -1 will should all users.
 // Param filters: filter struct that provides sort and pagination information.
 // Return Value 1, Slice of ApiKeys: This return value is the set of keys found with applied filters and pagination.
 // Return Value 2, Metadata: This is the metadata information that includes pagination information.
 // Return Value 3 is unhandled errors.
-func (da ApiKeyDataAccess) GetAll(user_id int, filters Filters) ([]ApiKeyData, Metadata, error) {
+func (da ApiKeyDataAccess) GetAll(user_id int64, filters Filters) ([]ApiKeyData, Metadata, error) {
 	// Note count(*) OVER() is used for getting the total count of records returned.
 	// The (user_id = $1 OR $1 = '') clause allows for an optional filter by user_id.
 	// ORDER BY %s %s, id ASC interpolates the sort column and direction from
