@@ -31,7 +31,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 	user := &data.User{
 		Name:      input.Name,
 		Email:     input.Email,
-		Activated: false,
+		Activated: true, //Set to true for development
 	}
 
 	// Use the Password.Set() method to generate and store the hashed and plaintext
@@ -67,8 +67,7 @@ func (app *application) registerUserHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Add the "movies:read" permission for the new user.
-	err = app.models.Permissions.AddForUser(user.ID, "movies:read")
+	err = app.models.Permissions.AddForUser(user.ID, "keys:add", "keys:get", "keys:delete")
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return

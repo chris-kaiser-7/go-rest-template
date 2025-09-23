@@ -33,9 +33,9 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodGet, "/v1/keys/:id", app.requirePermissions("keys:get", app.getApiKeyHandler))
 	router.HandlerFunc(http.MethodDelete, "/v1/keys/:id", app.requirePermissions("keys:delete", app.deactivateApiKeyHandler))
 
-	router.HandlerFunc(http.MethodGet, "/v1/admin/keys", app.requirePermissions("keys:admin_get", app.adminGetAllApiKeyHandler))
-	router.HandlerFunc(http.MethodGet, "/v1/admin/keys/:id", app.requirePermissions("keys:admin_get", app.adminGetApiKeyHandler))
-	router.HandlerFunc(http.MethodDelete, "/v1/admin/keys/:id", app.requirePermissions("keys:admin_delete", app.deactivateApiKeyHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/admin/keys", app.requirePermissions("keys:admin", app.adminGetAllApiKeyHandler))
+	router.HandlerFunc(http.MethodGet, "/v1/admin/keys/:id", app.requirePermissions("keys:admin", app.adminGetApiKeyHandler))
+	router.HandlerFunc(http.MethodDelete, "/v1/admin/keys/:id", app.requirePermissions("keys:admin", app.deactivateApiKeyHandler))
 
 	// Users handlers
 	router.HandlerFunc(http.MethodPost, "/v1/users", app.registerUserHandler)

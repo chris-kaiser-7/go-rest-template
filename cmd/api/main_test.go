@@ -1,46 +1,95 @@
-package data
+package main
 
 import (
 	"database/sql"
-	"flag"
+	"encoding/json"
+	"io"
 	"log"
+	"net/http"
 	"os"
+	"strings"
 	"testing"
-)
 
-const (
-	userTableName        = "users"
-	apiKeyTableName      = "api_keys"
-	apiKeyUsageTableName = "api_key_usage"
+	"github.com/chris-a-kaiser-7/go-rest-template/internal/data"
 )
 
 var (
-	testDB     *sql.DB
-	daWrappers DataAccessWrapers
-	dsn        string
+	ts        *testServer
+	testToken string
 )
 
 func TestMain(m *testing.M) {
-	var err error
+	app, db := newTestApp()
+	defer db.Close() //nolint:errcheck
+	ts = newTestServer(app.routes())
+	defer ts.Close()
 
-	flag.StringVar(&dsn, "dsn", "", "Test DB connection string")
-	flag.Parse()
-	testDB, err = sql.Open("postgres", dsn)
+	requestBody := `{
+		"name": "testUser",
+		"email": "testEmail@gmail.com",
+		"password": "testpass"
+	}`
+
+	code, _, body := post("/v1/users", strings.NewReader(requestBody))
+	if code != http.StatusAccepted {
+		log.Fatalf("failed to setup user code: %d body: %s", code, string(body))
+	}
+
+	type ruser struct {
+		User data.User `json:"user"`
+	}
+	u := ruser{}
+	err := json.Unmarshal(body, &u)
 	if err != nil {
-		log.Fatalf("failed to connect to test db: %v", err)
+		log.Fatalf("Error unmarshalling JSON: %v", err)
 	}
-	defer testDB.Close()
+	perms, _ := app.models.Permissions.GetAllForUser(u.User.ID)
+	log.Printf("permissions for test user %v", perms)
 
-	if err := ResetSchema(testDB); err != nil {
-		log.Fatalf("failed to reset schema: %v", err)
+	requestBody = `{
+		"email": "testEmail@gmail.com",
+		"password": "testpass"
+	}`
+	code, _, body = post("/v1/tokens/authentication", strings.NewReader(requestBody))
+	if code != http.StatusCreated {
+		log.Fatalf("failed to setup token code: %d body: %s", code, string(body))
 	}
 
-	daWrappers = InitDataAccess(testDB)
+	type resp struct {
+		Auth data.Token `json:"authentication_token"`
+	}
+	r := resp{}
+
+	err = json.Unmarshal(body, &r)
+	if err != nil {
+		log.Fatalf("Error unmarshalling JSON: %v", err)
+	}
+	testToken = r.Auth.Plaintext
 
 	os.Exit(m.Run())
 }
 
-func ResetSchema(db *sql.DB) error {
+func post(urlPath string, requestBody io.Reader) (int, http.Header, []byte) {
+	rs, err := ts.Client().Post(ts.URL+urlPath, "application/json", requestBody)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer func() {
+		if err := rs.Body.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	body, err := io.ReadAll(rs.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return rs.StatusCode, rs.Header, body
+}
+
+func resetSchema(db *sql.DB) error {
 	_, err := db.Exec(`
 		DROP TABLE IF EXISTS users;
 		DROP TABLE IF EXISTS tokens;
@@ -82,7 +131,7 @@ func ResetSchema(db *sql.DB) error {
 		);
 
 		INSERT INTO permissions (code)
-		VALUES ('keys:read'), ('keys:delete'), ('keys:add');
+		VALUES ('keys:get'), ('keys:add'), ('keys:delete'), ('keys:admin');
 
 		CREATE TABLE IF NOT EXISTS api_keys
 		(

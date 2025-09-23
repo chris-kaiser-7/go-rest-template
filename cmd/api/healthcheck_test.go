@@ -8,10 +8,6 @@ import (
 // TestHealthcheck tests ping handler for the correct response status code, 200 and
 // the correct response body, "OK".
 func TestHealthcheck(t *testing.T) {
-	app := newTestApp()
-	ts := newTestServer(app.routes())
-	defer ts.Close()
-
 	code, _, body := ts.get(t, "/v1/healthcheck")
 
 	if code != http.StatusOK {
