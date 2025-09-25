@@ -1,23 +1,27 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
 	"regexp"
 	"strings"
 	"testing"
-
-	"github.com/chris-a-kaiser-7/go-rest-template/internal/data"
 )
 
 var apiKeyValue string
 
+const (
+	methodGET    = "GET"
+	methodPOST   = "POST"
+	methodDELETE = "DELETE"
+	methodUPDATE = "UPDATE"
+)
+
 func TestApiKeyCreate(t *testing.T) {
-	rBody := `{
-		"keyName": "testKey"
-	}`
-	code, _, body := ts.post(t, "/v1/keys", strings.NewReader(rBody))
+	rBody := `{ "keyName": "testKey" }`
+	code, _, body := ts.request(t, methodPOST, "/v1/keys", strings.NewReader(rBody))
 
 	if code != http.StatusOK {
 		t.Errorf("want %d; got %d", http.StatusOK, code)
@@ -31,29 +35,41 @@ func TestApiKeyCreate(t *testing.T) {
 	}
 }
 
-func TestApiKeyValidate(t *testing.T) {
+func TestApiKeyDelete(t *testing.T) {
 	k := createKey(t, "testKey2")
+	code, _, body := ts.request(t, methodDELETE, fmt.Sprintf("/v1/keys/%d", k.Id), nil)
 
-	rBody := fmt.Sprintf(`{
-		"keyName": "%s"
-	}`, k)
-	code, _, body := ts.post(t, "/v1/keys", strings.NewReader(rBody))
 	if code != http.StatusOK {
 		t.Errorf("want %d; got %d", http.StatusOK, code)
 	}
-	t.Logf("%s", body)
 
+	expected := []byte("API key succesfully deactivated.")
+	if !bytes.Contains(body, expected) {
+		t.Errorf("expected body to contain \"%s\" got %s", expected, body)
+	}
 }
 
-func createKey(t *testing.T, name string) []byte {
+func TestApiKeyValidate(t *testing.T) {
+	k := createKey(t, "testKey3")
+
+	rBody := fmt.Sprintf(`{
+		"key": "%s"
+	}`, k.Key)
+	code, _, _ := ts.request(t, methodPOST, "/v1/keys/validate", strings.NewReader(rBody))
+	if code != http.StatusOK {
+		t.Errorf("want %d; got %d", http.StatusOK, code)
+	}
+}
+
+func createKey(t *testing.T, name string) formatedApiKey {
 	rBody := fmt.Sprintf(`{ "keyName": "%s" }`, name)
-	code, _, body := ts.post(t, "/v1/keys", strings.NewReader(rBody))
+	code, _, body := ts.request(t, methodPOST, "/v1/keys", strings.NewReader(rBody))
 	if code != http.StatusOK {
 		t.Errorf("want %d; got %d", http.StatusOK, code)
 	}
 
 	type resp struct {
-		ApiKey data.ApiKeyData `json:"apiKey"`
+		ApiKey formatedApiKey `json:"apiKey"`
 	}
 	r := resp{}
 
@@ -61,5 +77,5 @@ func createKey(t *testing.T, name string) []byte {
 	if err != nil {
 		t.Errorf("error unmarshalling keys: %v", err)
 	}
-	return r.ApiKey.Key
+	return r.ApiKey
 }

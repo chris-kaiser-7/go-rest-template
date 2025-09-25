@@ -90,6 +90,13 @@ func (app *application) invalidCredentialsResponse(w http.ResponseWriter, r *htt
 	app.errorResponse(w, r, http.StatusUnauthorized, message)
 }
 
+// invalidCredentialsResponse sends a JSON-formatted error with a 401 Unauthorized status code
+// to the client.
+func (app *application) invalidApiKeyValidation(w http.ResponseWriter, r *http.Request) {
+	message := "invalid API Key"
+	app.errorResponse(w, r, http.StatusUnauthorized, message)
+}
+
 // invalidAuthenticationTokenResponse sends a JSON-formatted error with a 401 Unauthorized status
 // code and "WWW-Authenticate: Bearer" header to the client.
 func (app *application) invalidAuthenticationTokenResponse(w http.ResponseWriter, r *http.Request) {

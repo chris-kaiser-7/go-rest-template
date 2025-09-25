@@ -1,14 +1,32 @@
 package main
 
 import (
+	"errors"
+	"net/http"
+	"time"
+
 	"github.com/chris-a-kaiser-7/go-rest-template/internal/data"
 	"github.com/chris-a-kaiser-7/go-rest-template/internal/validator"
-	"net/http"
 )
 
-type KeyReturn struct {
-	data.ApiKeyData
-	uses int
+type formatedApiKey struct {
+	Id        int64     `json:"id"`
+	CreatedAt time.Time `json:"-"`
+	UserId    int64     `json:"user_id"`
+	KeyName   string    `json:"key_name"`
+	Key       string    `json:"key_value"`
+	Uses      int       `json:"uses"`
+}
+
+func formatApiKey(key data.ApiKeyData, useCount int) formatedApiKey {
+	return formatedApiKey{
+		Id:        key.Id,
+		CreatedAt: key.CreatedAt,
+		UserId:    key.UserId,
+		KeyName:   key.KeyName,
+		Key:       string(key.Key),
+		Uses:      useCount,
+	}
 }
 
 func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +52,7 @@ func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"apiKey": newKey}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"apiKey": formatApiKey(newKey, 0)}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -43,7 +61,7 @@ func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Reque
 
 func (app *application) validateApiKeyHandler(w http.ResponseWriter, r *http.Request) {
 	var input struct {
-		Key string `json:"keyName"`
+		Key string `json:"key"`
 	}
 
 	err := app.readJSON(w, r, &input)
@@ -54,11 +72,22 @@ func (app *application) validateApiKeyHandler(w http.ResponseWriter, r *http.Req
 
 	fetchedKey, err := app.models.ApiKeys.Validate([]byte(input.Key))
 	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.invalidApiKeyValidation(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	uses, err := app.models.ApiKeyUsage.GetUsageDataByKey(fetchedKey.Id)
+	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"apiKey": fetchedKey}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"apiKey": formatApiKey(fetchedKey, uses)}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -89,7 +118,7 @@ func (app *application) getApiKeyHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"ApiKey": KeyReturn{ApiKeyData: keyData, uses: usage}, "uses": usage}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"ApiKey": formatApiKey(keyData, usage)}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -114,14 +143,14 @@ func (app *application) getAllApiKeyUsageHandler(w http.ResponseWriter, r *http.
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	keyReturns := make([]KeyReturn, len(keys))
+	keyReturns := make([]formatedApiKey, len(keys))
 	for i, key := range keys {
 		c, err := app.models.ApiKeyUsage.GetUsageDataByKey(key.Id)
 		if err != nil {
 			app.serverErrorResponse(w, r, err)
 			return
 		}
-		keyReturns[i] = KeyReturn{ApiKeyData: key, uses: c}
+		keyReturns[i] = formatApiKey(key, c)
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"metadata": metadata, "ApiKeys": keyReturns}, nil)
@@ -154,7 +183,7 @@ func (app *application) deactivateApiKeyHandler(w http.ResponseWriter, r *http.R
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	err = app.writeJSON(w, http.StatusOK, envelope{"message": "api succesfully deactivated."}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "API key succesfully deactivated."}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -180,7 +209,7 @@ func (app *application) adminGetApiKeyHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"ApiKey": KeyReturn{ApiKeyData: keyData, uses: usage}, "uses": usage}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"ApiKey": formatApiKey(keyData, usage)}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -206,14 +235,14 @@ func (app *application) adminGetAllApiKeyHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	keyReturns := make([]KeyReturn, len(keys))
+	keyReturns := make([]formatedApiKey, len(keys))
 	for i, key := range keys {
 		c, err := app.models.ApiKeyUsage.GetUsageDataByKey(key.Id)
 		if err != nil {
 			app.serverErrorResponse(w, r, err)
 			return
 		}
-		keyReturns[i] = KeyReturn{ApiKeyData: key, uses: c}
+		keyReturns[i] = formatApiKey(key, c)
 	}
 
 	err = app.writeJSON(w, http.StatusOK, envelope{"metadata": metadata, "ApiKeys": keyReturns}, nil)

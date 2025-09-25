@@ -8,7 +8,7 @@ import (
 // TestHealthcheck tests ping handler for the correct response status code, 200 and
 // the correct response body, "OK".
 func TestHealthcheck(t *testing.T) {
-	code, _, body := ts.get(t, "/v1/healthcheck")
+	code, _, body := ts.request(t, methodGET, "/v1/healthcheck", nil)
 
 	if code != http.StatusOK {
 		t.Errorf("want %d; got %d", http.StatusOK, code)

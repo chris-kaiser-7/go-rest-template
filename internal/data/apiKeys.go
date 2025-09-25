@@ -136,7 +136,7 @@ func (da ApiKeyDataAccess) Get(key_id int64) (ApiKeyData, error) {
 	query := `
 		SELECT created_at, user_id, key_name
 		FROM api_keys
-		WHERE key_id = $1 AND activated = TRUE
+		WHERE id = $1 AND activated = TRUE
 		`
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)

@@ -34,10 +34,10 @@ func newTestApp() (*application, *sql.DB) {
 		log.Fatalf("failed to connect to test db: %v", err)
 	}
 
-	if err := resetSchema(testDB); err != nil {
-		log.Fatalf("failed to reset schema: %v", err)
-	}
-	log.Println("completed reset schema")
+	// if err := resetSchema(testDB); err != nil {
+	// 	log.Fatalf("failed to reset schema: %v", err)
+	// }
+	// log.Println("completed reset schema")
 
 	logger := jsonlog.NewLogger(os.Stdout, jsonlog.LevelInfo)
 
@@ -50,10 +50,6 @@ func newTestApp() (*application, *sql.DB) {
 	}
 
 	return &app, testDB
-}
-
-func wrapToken(t string) string {
-	return fmt.Sprintf("Authorization: Bearer %s", t)
 }
 
 // Create a newTestServer helper which initializes and returns a new instance of our
@@ -79,13 +75,33 @@ func (ts *testServer) get(t *testing.T, urlPath string) (int, http.Header, []byt
 		t.Fatal(err)
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testToken))
-	t.Logf("%#v", req.Header)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	return resp.StatusCode, resp.Header, body
+}
+
+func (ts *testServer) request(t *testing.T, method string, urlPath string, requestBody io.Reader) (int, http.Header, []byte) {
+	req, err := http.NewRequest(method, ts.URL+urlPath, requestBody)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testToken))
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -106,7 +122,7 @@ func (ts *testServer) post(t *testing.T, urlPath string, requestBody io.Reader) 
 	if err != nil {
 		t.Fatal(err)
 	}
-	defer resp.Body.Close()
+	defer resp.Body.Close() //nolint:errcheck
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {

@@ -31,9 +31,9 @@ func TestMain(m *testing.M) {
 	}
 	defer testDB.Close()
 
-	if err := ResetSchema(testDB); err != nil {
-		log.Fatalf("failed to reset schema: %v", err)
-	}
+	// if err := ResetSchema(testDB); err != nil {
+	// 	log.Fatalf("failed to reset schema: %v", err)
+	// }
 
 	daWrappers = InitDataAccess(testDB)
 

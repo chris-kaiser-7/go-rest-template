@@ -25,6 +25,7 @@ docker run -d \
   postgres:17
 
 
+
 # Wait for PostgreSQL to become ready
 echo "Waiting for PostgreSQL to be ready..."
 until docker exec "$CONTAINER_NAME" pg_isready -U "$POSTGRES_USER" > /dev/null 2>&1; do
@@ -34,5 +35,12 @@ done
 sleep 3
 
 docker exec "test-postgres" psql --username=postgres -d testdb -c "CREATE EXTENSION IF NOT EXISTS citext"
+
+SETUP_SCHEMA=$(./hack/test/db-init.sh)
+DEFAULT_USER=$(./hack/test/initDefaultUser.sh)
+
+docker exec "test-postgres" psql --username=postgres -d testdb -c "${SETUP_SCHEMA}"
+
+docker exec "test-postgres" psql --username=postgres -d testdb -c "${DEFAULT_USER}"
 
 echo "PostgreSQL is ready and running at localhost:$PORT"

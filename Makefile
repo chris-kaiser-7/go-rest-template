@@ -22,7 +22,9 @@ confirm:
 ## run/api: run the cmd/api application
 .PHONY: run/api
 run/api:
-	@go run ./cmd/api -db-dsn=${DB_DSN}
+	./hack/test/docker-postgres.sh
+
+	@go run ./cmd/api -db-dsn=${POSTGRES_TEST_DSN}
 
 ## db/psql: connect to the database using psql
 .PHONY: db/psql
@@ -51,11 +53,6 @@ db/migrations/down:
 # QUALITY CONTROL
 # ==================================================================================== #
 
-## test/setup: runs setup scripts for creating docker container
-.PHONY: test/setup
-test/setup:
-	./cmd/tests/book_setup.sh
-
 ## test/data: test internal data
 .PHONY: test/data
 test/data:
@@ -63,12 +60,21 @@ test/data:
 
 	@go test ./internal/data -v -dsn=${POSTGRES_TEST_DSN}
 
-## test/cmd: test api
+## test/api: test api
 .PHONY: test/api
 test/api:
 	./hack/test/docker-postgres.sh
 
 	@go test ./cmd/api -v -dsn=${POSTGRES_TEST_DSN}
+
+## test/all: test api
+.PHONY: test/all
+test/all:
+	./hack/test/docker-postgres.sh
+
+	@go test ./internal/data -v -dsn=${POSTGRES_TEST_DSN}
+	@go test ./cmd/api -v -dsn=${POSTGRES_TEST_DSN}
+
 
 
 ## audit: tidy dependencies and format, vet, and test all code

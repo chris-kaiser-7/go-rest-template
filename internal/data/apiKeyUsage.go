@@ -83,12 +83,10 @@ func (da ApiKeyUsageDataAccess) GetLatestUsageOfKey(keyUsage *ApiKeyUsage) error
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
-	//da.InfoLog.Printf("prefetche usage: %#v", keyUsage)
 	err := da.DB.QueryRowContext(ctx, query, keyUsage.KeyId).Scan(
 		&keyUsage.Id,
 		&keyUsage.BucketStart,
 		&keyUsage.UsageCount)
-	//da.InfoLog.Printf("fetched usage: %#v", keyUsage)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
@@ -133,7 +131,7 @@ func (da ApiKeyUsageDataAccess) GetUsageDataByKey(key_id int64) (int, error) {
 	defer cancel()
 
 	query := `
-		SELECT COALESCE(SUM(a.usage_count), 0)
+		SELECT COALESCE(SUM(usage_count), 0)
 		FROM api_key_usage
 		WHERE (key_id = $1)
 		`
