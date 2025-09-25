@@ -243,11 +243,23 @@ api_keys + indexes = 0.153 GB + 0.0918 GB = **0.244 GB**
 api_key_usage + indexes = 315.36 GB + 189 GB = **504.36 GB per year**
 
 ## Production Deployment
-
+This project contains a dockerfile that can be used to deploy to a Kubernetes cluster.
+To deploy to a VM use `make production/delopy/api` or use docker image.
 
 ## Benchmarks
+TODO
 
 ## Future Enhancements
+- Code review, consider Better abstractions
+- Benchmarks
+- Soft security review and pen tests
+- Add openapi spec
+- Better optimization by using time seires db for usage table
+- Add feature to allow users to change names of their api keys
+- Add usage resolution to be configurable per api key
+- Better err handling by adding retries 
+- A more useful id for clients to use instead of db id. Make username+apikey_name unique and use apikey_name as an ID
+- currently the latest usage of key is limited by resolution for accuracy. latest key should return an accruate timestamp where usage is less accurate.
 
 
 ## Greenlight
@@ -267,4 +279,3 @@ Has features such as:
 
 I am working to add additional features where this project is lacking to perfect a template to use for REST projects. 
 Mainly a test suite and benchmarking suite are not included in this project that I want to add. 
-

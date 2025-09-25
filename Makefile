@@ -1,5 +1,8 @@
 # Include env variables
+
 include .envrc
+POSTGRES_TEST_DSN ?= 'postgres://postgres:postgres@localhost:5433/testdb?sslmode=disable'
+
 
 # ==================================================================================== #
 # HELPERS
@@ -67,7 +70,7 @@ test/api:
 
 	@go test ./cmd/api -v -dsn=${POSTGRES_TEST_DSN}
 
-## test/all: test api
+## test/all: test all
 .PHONY: test/all
 test/all:
 	./hack/test/docker-postgres.sh
