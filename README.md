@@ -146,7 +146,7 @@ You can also provide pagination data for the query params "page", "page_size", a
 Accepted sort values are "id" for id ascending and "-id" for id descending
 
 ```
-curl -X GET "localhost:4000/v1/keys?page=2&page_size=2&sort=-id" \ 
+curl -X GET "localhost:4000/v1/keys?page=2&page_size=2&sort=-id" \
 -H "Authorization: Bearer ${TOKEN}"
 ```
 
@@ -262,7 +262,9 @@ TODO
 - Add usage resolution to be configurable per api key
 - Better err handling by adding retries 
 - A more useful id for clients to use instead of db id. Make username+apikey_name unique and use apikey_name as an ID
-- currently the latest usage of key is limited by resolution for accuracy. latest key should return an accruate timestamp where usage is less accurate.
+- Currently the latest usage of key is limited by resolution for accuracy. Latest key should return an accruate timestamp where usage is less accurate.
+- review timezone logic
+- update internal data to do batch queries
 
 
 ## Greenlight
