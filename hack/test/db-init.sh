@@ -72,7 +72,8 @@ CREATE TABLE IF NOT EXISTS api_key_usage
   usage_count   INT DEFAULT 1
 );
 
-CREATE INDEX IF NOT EXISTS ix_apikey_id_ts ON api_key_usage (key_id, bucket_start DESC); 
-CREATE INDEX IF NOT EXISTS ix_apikey_id_ts ON api_key_usage (key_id, bucket_start DESC); 
-
+CREATE INDEX IF NOT EXISTS ix_users ON tokens (user_id); 
+CREATE INDEX IF NOT EXISTS ix_users ON users (email); 
+CREATE INDEX IF NOT EXISTS ix_key_hash ON api_keys (key_hash); 
+CREATE INDEX IF NOT EXISTS ix_apikey_id_bucket ON api_key_usage (key_id, bucket_start DESC); 
 "

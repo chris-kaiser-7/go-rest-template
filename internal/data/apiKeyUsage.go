@@ -83,6 +83,8 @@ func (da ApiKeyUsageDataAccess) GetLatestUsageOfKey(keyUsage *ApiKeyUsage) error
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 	defer cancel()
 
+	da.InfoLog.Printf("key id: %d", keyUsage.KeyId)
+
 	err := da.DB.QueryRowContext(ctx, query, keyUsage.KeyId).Scan(
 		&keyUsage.Id,
 		&keyUsage.BucketStart,
@@ -90,6 +92,7 @@ func (da ApiKeyUsageDataAccess) GetLatestUsageOfKey(keyUsage *ApiKeyUsage) error
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
+			da.InfoLog.Println("afdsafdsaf")
 			return ErrRecordNotFound
 		default:
 			return err

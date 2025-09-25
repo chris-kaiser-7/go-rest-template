@@ -224,5 +224,5 @@ func (da ApiKeyDataAccess) GetAll(user_id int64, filters Filters) ([]ApiKeyData,
 // ValidateApiKey runs validation checks on the ApiKey type.
 func ValidateApiKey(v *validator.Validator, apiKey *ApiKeyData) {
 	v.Check(apiKey.KeyName != "", "name", "must be provided")
-	v.Check(len(apiKey.KeyName) <= 500, "name", "must not be more than 500 bytes long")
+	v.Check(len(apiKey.KeyName) <= 64, "name", "must not be more than 64 bytes long")
 }

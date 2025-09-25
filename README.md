@@ -146,7 +146,8 @@ you can also provide pagination data for the query params "page", "page_size", a
 Accepted sort values are "id" for id ascending and "-id" for id descending
 
 ```
-curl -X GET "localhost:4000/v1/keys?page=2&page_size=2&sort=-id" -H "Authorization: Bearer ${TOKEN}"
+curl -X GET "localhost:4000/v1/keys?page=2&page_size=2&sort=-id" \ 
+-H "Authorization: Bearer ${TOKEN}"
 ```
 
 This will return something like this:
@@ -185,8 +186,64 @@ This will return something like this:
 The metadata field provides client pagination data
 
 ## Database Models
+The db model for the API keys is as such:
+
+api_keys
+(
+    id         BIGSERIAL
+    created_at TIMESTAMP
+    user_id    BIGINT foreign key for users(id)
+    key_name   TEXT
+    key_hash   BYTEA
+    activated  BOOL
+)
+
+api_key_usage
+(
+    id            BIGSERIAL
+    key_id        BIGINT foreign key for api_keys(id)
+    bucket_start  TIMESTAMP(0)
+    usage_count   INT
+)
+
+### Storage estimation
+
+Assuming the user is not going to exceed 2,147,483,647 uses of api_key in a resolution time window (default 1 hour)
+
+Back of the envelope estimations with 1 million active keys (keys are being used every hour)
+
+Using max storage assumptions for name and hash 1 row of api_keys is:
+id 8 bytes +
+user_id 8 bytes +
+key_hash 4 bytes + 64 bytes +
+key_name 4 bytes + 64 bytes +
+activated 1 bytes =
+total of 153 bytes
+
+total size of api_keys table 1,000,000 * 153 B = 153,000,000 B = 0.153 GB
+
+Storage for 1 row of api_key_usage is:
+id 8 bytes +
+key_id 8 bytes +
+bucket_start 8 bytes + 
+usage_count 4 bytes =
+total of 36 bytes
+
+Assuming each key is frequently used, each key will have 1 row per resolution time (1 hour).
+Size of usage rows per key per year (365 days / 8760 hours) = 8760 B * 36 B = 315,360 Bytes per 365 days
+total size of api_key_usage table = 315,360 B * 1,000,000 B = 315,360,000,000 B = 315.36 GB per year
+
+Assuming indexes for api_keys is 20% table size with 2 indexes
+api_key index size = (153 MB * 0.2) * 2 = 91.8 MB = 0.0918 GB
+
+Assuming indexes for api_key_usage is 20% table size with 3 indexes
+api_key index size = (315.36 GB * 0.2) * 3 = 189 GB per year
+
+api_keys + indexes = 0.153 GB + 0.0918 GB = **0.244 GB**
+api_key_usage + indexes = 315.36 GB + 189 GB = **504.36 GB per year**
 
 ## Production Deployment
+
 
 ## Benchmarks
 

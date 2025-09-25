@@ -18,6 +18,11 @@ type formatedApiKey struct {
 	Uses      int       `json:"uses"`
 }
 
+type formatedApiKeyLastUsed struct {
+	formatedApiKey
+	LastUsed time.Time `json:"last_used"`
+}
+
 func formatApiKey(key data.ApiKeyData, useCount int) formatedApiKey {
 	return formatedApiKey{
 		Id:        key.Id,
@@ -26,6 +31,20 @@ func formatApiKey(key data.ApiKeyData, useCount int) formatedApiKey {
 		KeyName:   key.KeyName,
 		Key:       string(key.Key),
 		Uses:      useCount,
+	}
+}
+
+func formatApiKeyUsage(key data.ApiKeyData, useCount int, lastUsed time.Time) formatedApiKeyLastUsed {
+	return formatedApiKeyLastUsed{
+		formatedApiKey: formatedApiKey{
+			Id:        key.Id,
+			CreatedAt: key.CreatedAt,
+			UserId:    key.UserId,
+			KeyName:   key.KeyName,
+			Key:       string(key.Key),
+			Uses:      useCount,
+		},
+		LastUsed: lastUsed,
 	}
 }
 
@@ -112,13 +131,26 @@ func (app *application) getApiKeyHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	usage, err := app.models.ApiKeyUsage.GetUsageDataByKey(keyId)
+	usage := data.ApiKeyUsage{KeyId: keyId}
+	err = app.models.ApiKeyUsage.GetLatestUsageOfKey(&usage)
+	if err != nil && !errors.Is(err, data.ErrRecordNotFound) {
+		app.serverErrorResponse(w, r, err)
+	}
+
+	usage_count, err := app.models.ApiKeyUsage.GetUsageDataByKey(keyId)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"ApiKey": formatApiKey(keyData, usage)}, nil)
+	var body any
+	if usage_count != 0 {
+		body = formatApiKeyUsage(keyData, usage_count, usage.BucketStart)
+	} else {
+		body = formatApiKey(keyData, usage_count)
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"ApiKey": body}, nil)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
