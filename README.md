@@ -30,7 +30,7 @@ When you see
 ```
 The api is ready to receive on localhost:4000
 
-**Note**
+**Note**  
 A user is required for auth to use ApiKey endpoints
 For testing a default admin user and token is created with the credentials
 ```
@@ -40,7 +40,7 @@ token: 6UTN57UN5XXWRUB2XCYZPEWE44
 ```
 So instead of creating your own user you can just run `TOKEN=6UTN57UN5XXWRUB2XCYZPEWE44`.
 
-### create user
+### Create user
 To create a user you can run the following commands
 ```
 BODY='{"name":"testUser","email":"testEmail@gmail.com","password":"testpass"}'
@@ -142,7 +142,7 @@ To get the details on all your keys you can use
 curl -X GET localhost:4000/v1/keys \
 -H "Authorization: Bearer ${TOKEN}"
 ```
-you can also provide pagination data for the query params "page", "page_size", and "sort". 
+You can also provide pagination data for the query params "page", "page_size", and "sort". 
 Accepted sort values are "id" for id ascending and "-id" for id descending
 
 ```
@@ -152,42 +152,43 @@ curl -X GET "localhost:4000/v1/keys?page=2&page_size=2&sort=-id" \
 
 This will return something like this:
 ```
-        "ApiKeys": [
-                {
-                        "id": 2,
-                        "user_id": 1,
-                        "key_name": "testKey1",
-                        "key_value": "",
-                        "uses": 2 
-                },
-                {
-                        "id": 3,
-                        "user_id": 1,
-                        "key_name": "testKey2",
-                        "key_value": "",
-                        "uses": 5
-                },
-                {
-                        "id": 4,
-                        "user_id": 1,
-                        "key_name": "testKey3",
-                        "key_value": "",
-                        "uses": 0
-                }
-        ],
-        "metadata": {
-                "current_page": 1,
-                "page_size": 20,
-                "first_page": 1,
-                "last_page": 1,
-                "total_records": 3
+"ApiKeys": [
+        {
+                "id": 2,
+                "user_id": 1,
+                "key_name": "testKey1",
+                "key_value": "",
+                "uses": 2 
+        },
+        {
+                "id": 3,
+                "user_id": 1,
+                "key_name": "testKey2",
+                "key_value": "",
+                "uses": 5
+        },
+        {
+                "id": 4,
+                "user_id": 1,
+                "key_name": "testKey3",
+                "key_value": "",
+                "uses": 0
         }
+],
+"metadata": {
+        "current_page": 1,
+        "page_size": 20,
+        "first_page": 1,
+        "last_page": 1,
+        "total_records": 3
+}
 ```
 The metadata field provides client pagination data
 
 ## Database Models
 The db model for the API keys is as such:
 
+```
 api_keys
 (
     id         BIGSERIAL
@@ -205,6 +206,7 @@ api_key_usage
     bucket_start  TIMESTAMP(0)
     usage_count   INT
 )
+```
 
 ### Storage estimation
 
@@ -212,38 +214,39 @@ Assuming the user is not going to exceed 2,147,483,647 uses of api_key in a reso
 
 Back of the envelope estimations with 1 million active keys (keys are being used every hour)
 
-Using max storage assumptions for name and hash 1 row of api_keys is:
-id 8 bytes +
-user_id 8 bytes +
-key_hash 4 bytes + 64 bytes +
-key_name 4 bytes + 64 bytes +
-activated 1 bytes =
+Using max storage assumptions for name and hash 1 row of api_keys is:  
+id 8 bytes +  
+user_id 8 bytes +  
+key_hash 4 bytes + 64 bytes +  
+key_name 4 bytes + 64 bytes +  
+activated 1 bytes =  
 total of 153 bytes
 
 total size of api_keys table 1,000,000 * 153 B = 153,000,000 B = 0.153 GB
 
-Storage for 1 row of api_key_usage is:
-id 8 bytes +
-key_id 8 bytes +
-bucket_start 8 bytes + 
-usage_count 4 bytes =
+Storage for 1 row of api_key_usage is:  
+id 8 bytes +  
+key_id 8 bytes +  
+bucket_start 8 bytes +  
+usage_count 4 bytes =  
 total of 36 bytes
 
-Assuming each key is frequently used, each key will have 1 row per resolution time (1 hour).
-Size of usage rows per key per year (365 days / 8760 hours) = 8760 B * 36 B = 315,360 Bytes per 365 days
+Assuming each key is frequently used, each key will have 1 row per resolution time (1 hour).  
+Size of usage rows per key per year (365 days / 8760 hours) = 8760 B * 36 B = 315,360 Bytes per 365 days  
 total size of api_key_usage table = 315,360 B * 1,000,000 B = 315,360,000,000 B = 315.36 GB per year
 
-Assuming indexes for api_keys is 20% table size with 2 indexes
+Assuming indexes for api_keys is 20% table size with 2 indexes  
 api_key index size = (153 MB * 0.2) * 2 = 91.8 MB = 0.0918 GB
 
-Assuming indexes for api_key_usage is 20% table size with 3 indexes
+Assuming indexes for api_key_usage is 20% table size with 3 indexes  
 api_key index size = (315.36 GB * 0.2) * 3 = 189 GB per year
 
-api_keys + indexes = 0.153 GB + 0.0918 GB = **0.244 GB**
+api_keys + indexes = 0.153 GB + 0.0918 GB = **0.244 GB**  
 api_key_usage + indexes = 315.36 GB + 189 GB = **504.36 GB per year**
 
 ## Production Deployment
 This project contains a dockerfile that can be used to deploy to a Kubernetes cluster.
+
 To deploy to a VM use `make production/delopy/api` or use docker image.
 
 ## Benchmarks
@@ -266,9 +269,8 @@ TODO
 The base of this project is forked from a template by Alex Edwards and further enhanced by Chris Kaiser
 
 Greenlight is a simple but flexible project by Alex Edwards (https://github.com/codeaucafe/greenlight) 
-that I have been using as a template for REST projects. 
-The project sets up an idiomatic folder and code structure. 
-Has features such as:
+that I have been using as a template for REST projects. The project sets up an idiomatic folder and 
+code structure and has Has features such as:
 - multiplexer and route table in /cmd/api/routes.go
 - CRUD's and endpoints for Users, Tokens, and Permissions  
 - A smtp mailer interface to verify user email addresses
