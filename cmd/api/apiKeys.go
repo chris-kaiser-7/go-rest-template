@@ -52,8 +52,13 @@ func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Reque
 	var input struct {
 		KeyName string `json:"keyName"`
 	}
+	err := app.checkContentTypeJSON(r.Header)
+	if err != nil {
+		app.unsupportedMediaTypeResponse(w, r)
+		return
+	}
 
-	err := app.readJSON(w, r, &input)
+	err = app.readJSON(w, r, &input)
 	if err != nil {
 		app.badRequestResponse(w, r, err)
 		return

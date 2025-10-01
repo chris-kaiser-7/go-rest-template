@@ -51,6 +51,13 @@ func initDefaultHeader() {
 	}
 }
 
+func (app *application) checkContentTypeJSON(header http.Header) error {
+	if h := header.Get(CONTENT_TYPE); h != "application/json" {
+		return errors.New(fmt.Sprintf("Expected %s = application/json, but got %s", CONTENT_TYPE, h))
+	}
+	return nil
+}
+
 // writeJSON marshals data structure to encoded JSON response. It returns an error if there are
 // any issues, else error is nil.
 func (app *application) writeJSON(w http.ResponseWriter, status int, data envelope,

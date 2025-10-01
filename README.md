@@ -112,6 +112,7 @@ curl -X POST localhost:4000/v1/keys/validate \
 -H "Authorization: Bearer ${TOKEN}" \
 -d "$BODY"
 ```
+application/javascript
 The response should look something like
 ```
 {
