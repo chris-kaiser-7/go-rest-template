@@ -71,7 +71,7 @@ func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"apiKey": formatApiKey(newKey, 0)}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"apiKey": formatApiKey(newKey, 0)}, defaultHeader)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -106,7 +106,7 @@ func (app *application) validateApiKeyHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"apiKey": formatApiKey(fetchedKey, uses)}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"apiKey": formatApiKey(fetchedKey, uses)}, defaultHeader)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -150,7 +150,7 @@ func (app *application) getApiKeyHandler(w http.ResponseWriter, r *http.Request)
 		body = formatApiKey(keyData, usage_count)
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"ApiKey": body}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"ApiKey": body}, defaultHeader)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -185,7 +185,7 @@ func (app *application) getAllApiKeyUsageHandler(w http.ResponseWriter, r *http.
 		keyReturns[i] = formatApiKey(key, c)
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"metadata": metadata, "ApiKeys": keyReturns}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"metadata": metadata, "ApiKeys": keyReturns}, defaultHeader)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -215,7 +215,8 @@ func (app *application) deactivateApiKeyHandler(w http.ResponseWriter, r *http.R
 		app.serverErrorResponse(w, r, err)
 		return
 	}
-	err = app.writeJSON(w, http.StatusOK, envelope{"message": "API key succesfully deactivated."}, nil)
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "API key succesfully deactivated."}, defaultHeader)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -241,7 +242,7 @@ func (app *application) adminGetApiKeyHandler(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"ApiKey": formatApiKey(keyData, usage)}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"ApiKey": formatApiKey(keyData, usage)}, defaultHeader)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -277,7 +278,7 @@ func (app *application) adminGetAllApiKeyHandler(w http.ResponseWriter, r *http.
 		keyReturns[i] = formatApiKey(key, c)
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"metadata": metadata, "ApiKeys": keyReturns}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"metadata": metadata, "ApiKeys": keyReturns}, defaultHeader)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return
@@ -297,7 +298,7 @@ func (app *application) adminDeactivateApiKeyHandler(w http.ResponseWriter, r *h
 		return
 	}
 
-	err = app.writeJSON(w, http.StatusOK, envelope{"message": "api succesfully deactivated."}, nil)
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "api succesfully deactivated."}, defaultHeader)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return

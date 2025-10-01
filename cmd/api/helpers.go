@@ -30,6 +30,27 @@ func (app *application) readIDParam(r *http.Request) (int64, error) {
 	return id, nil
 }
 
+const (
+	CACHE_CONTROL             = "Cache-Control"
+	CONTENT_SECURITY_POLICY   = "Content-Security-Policy"
+	CONTENT_TYPE              = "Content-Type"
+	STRICT_TRANSPORT_SECURITY = "Strict-Transport-Security"
+	X_CONTENT_OPTIONS         = "X-Content-Type-Options"
+	X_FRAME_OPTIONS           = "X-Frame-Options"
+)
+
+var defaultHeader http.Header
+
+func initDefaultHeader() {
+	defaultHeader = http.Header{
+		CACHE_CONTROL:             []string{"no-store"},
+		CONTENT_SECURITY_POLICY:   []string{"frame-ancestors 'none'"},
+		STRICT_TRANSPORT_SECURITY: []string{"max-age=86400; includeSubDomains"},
+		X_CONTENT_OPTIONS:         []string{"nosniff"},
+		X_FRAME_OPTIONS:           []string{"DENY"},
+	}
+}
+
 // writeJSON marshals data structure to encoded JSON response. It returns an error if there are
 // any issues, else error is nil.
 func (app *application) writeJSON(w http.ResponseWriter, status int, data envelope,
@@ -54,7 +75,7 @@ func (app *application) writeJSON(w http.ResponseWriter, status int, data envelo
 	}
 
 	// Add the "Content-Type: application/json" header, then write the status code and JSON response.
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set(CONTENT_TYPE, "application/json")
 	w.WriteHeader(status)
 	if _, err := w.Write(js); err != nil {
 		app.logger.PrintError(err, nil)

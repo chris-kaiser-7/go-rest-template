@@ -167,6 +167,8 @@ func main() {
 		return time.Now().Unix()
 	}))
 
+	initDefaultHeader()
+
 	// Declare an instance of the application struct, containing the config struct and the infoLog.
 	app := &application{
 		config: cfg,

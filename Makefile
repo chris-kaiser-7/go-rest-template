@@ -1,7 +1,7 @@
 # Include env variables
 
 include .envrc
-POSTGRES_TEST_DSN ?= 'postgres://postgres:postgres@localhost:5433/testdb?sslmode=disable'
+POSTGRES_TEST_DSN ?= 'pfostgres://postgres:postgres@localhost:5433/testdb?sslmode=disable'
 
 
 # ==================================================================================== #

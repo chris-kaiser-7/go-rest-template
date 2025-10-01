@@ -66,6 +66,8 @@ func TestMain(m *testing.M) {
 	}
 	testToken = r.Auth.Plaintext
 
+	initDefaultHeader()
+
 	os.Exit(m.Run())
 }
 

@@ -1,6 +1,8 @@
 module github.com/chris-a-kaiser-7/go-rest-template
 
-go 1.18
+go 1.24.0
+
+toolchain go1.24.1
 
 require (
 	github.com/felixge/httpsnoop v1.0.3

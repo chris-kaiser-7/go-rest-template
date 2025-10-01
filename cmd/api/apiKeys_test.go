@@ -21,7 +21,7 @@ const (
 
 func TestApiKeyCreate(t *testing.T) {
 	rBody := `{ "keyName": "testKey" }`
-	code, _, body := ts.request(t, methodPOST, "/v1/keys", strings.NewReader(rBody))
+	code, header, body := ts.request(t, methodPOST, "/v1/keys", strings.NewReader(rBody))
 
 	if code != http.StatusOK {
 		t.Errorf("want %d; got %d", http.StatusOK, code)
@@ -33,11 +33,13 @@ func TestApiKeyCreate(t *testing.T) {
 	if re.Match(body) {
 		t.Errorf("want body to match regex but got %q", string(body))
 	}
+
+	check_owasp_headers(t, header)
 }
 
 func TestApiKeyDelete(t *testing.T) {
 	k := createKey(t, "testKey2")
-	code, _, body := ts.request(t, methodDELETE, fmt.Sprintf("/v1/keys/%d", k.Id), nil)
+	code, header, body := ts.request(t, methodDELETE, fmt.Sprintf("/v1/keys/%d", k.Id), nil)
 
 	if code != http.StatusOK {
 		t.Errorf("want %d; got %d", http.StatusOK, code)
@@ -47,6 +49,8 @@ func TestApiKeyDelete(t *testing.T) {
 	if !bytes.Contains(body, expected) {
 		t.Errorf("expected body to contain \"%s\" got %s", expected, body)
 	}
+
+	check_owasp_headers(t, header)
 }
 
 func TestApiKeyValidate(t *testing.T) {
@@ -55,10 +59,11 @@ func TestApiKeyValidate(t *testing.T) {
 	rBody := fmt.Sprintf(`{
 		"key": "%s"
 	}`, k.Key)
-	code, _, _ := ts.request(t, methodPOST, "/v1/keys/validate", strings.NewReader(rBody))
+	code, header, _ := ts.request(t, methodPOST, "/v1/keys/validate", strings.NewReader(rBody))
 	if code != http.StatusOK {
 		t.Errorf("want %d; got %d", http.StatusOK, code)
 	}
+	check_owasp_headers(t, header)
 }
 
 func createKey(t *testing.T, name string) formatedApiKey {
