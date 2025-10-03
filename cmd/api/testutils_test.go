@@ -14,6 +14,7 @@ import (
 	"github.com/chris-a-kaiser-7/go-rest-template/internal/data"
 	"github.com/chris-a-kaiser-7/go-rest-template/internal/jsonlog"
 	"github.com/chris-a-kaiser-7/go-rest-template/internal/mailer"
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 )
 
 // Define a custom testServer type which anonymously embeds a httptest.Server instance.
@@ -42,11 +43,37 @@ func newTestApp() (*application, *sql.DB) {
 	logger := jsonlog.NewLogger(os.Stdout, jsonlog.LevelInfo)
 
 	mail := mailer.New("smtp-host", 2525, "smtp-username", "smtp-pass", "DoNotReply <3fc3f54366-09689f+1@inbox.mailtrap.io>")
+
+	p, err := kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers": "localhost:9092",
+		"client.id":         "myProducer",
+		"acks":              "all"})
+
+	if err != nil {
+		fmt.Printf("Failed to create producer: %s\n", err)
+		os.Exit(0)
+	}
+
+	go func() {
+		for e := range p.Events() {
+			switch ev := e.(type) {
+			case *kafka.Message:
+				if ev.TopicPartition.Error != nil {
+					fmt.Printf("Failed to deliver message: %v\n", ev.TopicPartition)
+				} else {
+					fmt.Printf("Successfully produced record to topic %s partition [%d] @ offset %v\n",
+						*ev.TopicPartition.Topic, ev.TopicPartition.Partition, ev.TopicPartition.Offset)
+				}
+			}
+		}
+	}()
+
 	app := application{
-		config: cfg,
-		logger: logger,
-		models: data.InitDataAccess(testDB),
-		mailer: mail,
+		config:        cfg,
+		logger:        logger,
+		models:        data.InitDataAccess(testDB),
+		mailer:        mail,
+		kafkaProducer: p,
 	}
 
 	return &app, testDB
@@ -96,6 +123,7 @@ func (ts *testServer) request(t *testing.T, method string, urlPath string, reque
 		t.Fatal(err)
 	}
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", testToken))
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/chris-a-kaiser-7/go-rest-template/internal/data"
 )
@@ -68,7 +69,9 @@ func TestMain(m *testing.M) {
 
 	initDefaultHeader()
 
-	os.Exit(m.Run())
+	errCode := m.Run()
+	time.Sleep(1 * time.Second)
+	os.Exit(errCode)
 }
 
 func post(urlPath string, requestBody io.Reader) (int, http.Header, []byte) {

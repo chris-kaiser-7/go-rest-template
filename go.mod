@@ -5,6 +5,7 @@ go 1.24.0
 toolchain go1.24.1
 
 require (
+	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/felixge/httpsnoop v1.0.3
 	github.com/go-mail/mail/v2 v2.3.0
 	github.com/julienschmidt/httprouter v1.3.0

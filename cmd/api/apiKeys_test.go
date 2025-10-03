@@ -24,7 +24,7 @@ func TestApiKeyCreate(t *testing.T) {
 	code, header, body := ts.request(t, methodPOST, "/v1/keys", strings.NewReader(rBody))
 
 	if code != http.StatusOK {
-		t.Errorf("want %d; got %d", http.StatusOK, code)
+		t.Fatalf("want %d; got %d\n body: %s", http.StatusOK, code, body)
 	}
 
 	pattern := `"apiKey":\s*{\s*"id":\s*\d+,\s*"user_id":\s*\d+,\s*"key_name":\s*"[^"]*",\s*"key_value":\s*"\w*"\s*}`
@@ -42,7 +42,7 @@ func TestApiKeyDelete(t *testing.T) {
 	code, header, body := ts.request(t, methodDELETE, fmt.Sprintf("/v1/keys/%d", k.Id), nil)
 
 	if code != http.StatusOK {
-		t.Errorf("want %d; got %d", http.StatusOK, code)
+		t.Fatalf("want %d; got %d", http.StatusOK, code)
 	}
 
 	expected := []byte("API key succesfully deactivated.")
@@ -61,7 +61,7 @@ func TestApiKeyValidate(t *testing.T) {
 	}`, k.Key)
 	code, header, _ := ts.request(t, methodPOST, "/v1/keys/validate", strings.NewReader(rBody))
 	if code != http.StatusOK {
-		t.Errorf("want %d; got %d", http.StatusOK, code)
+		t.Fatalf("want %d; got %d", http.StatusOK, code)
 	}
 	check_owasp_headers(t, header)
 }
@@ -70,7 +70,7 @@ func createKey(t *testing.T, name string) formatedApiKey {
 	rBody := fmt.Sprintf(`{ "keyName": "%s" }`, name)
 	code, _, body := ts.request(t, methodPOST, "/v1/keys", strings.NewReader(rBody))
 	if code != http.StatusOK {
-		t.Errorf("want %d; got %d", http.StatusOK, code)
+		t.Fatalf("want %d; got %d", http.StatusOK, code)
 	}
 
 	type resp struct {

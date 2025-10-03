@@ -18,11 +18,11 @@ var key64 = KeyLength{64, GetDecodedLen(64)}
 type Secret []byte
 
 func (s Secret) PopulateRand() {
-	rand.Read(s) //nolint:all rand.Read never returns error except on legacy linux systems
+	_, _ = rand.Read(s) //rand.Read never returns error except on legacy linux systems
 }
 
 func (s Secret) PopulateFromBase64(src []byte) {
-	base64.StdEncoding.Decode(s, src) //nolint:all Decode won't return an error since the size is controlled
+	_, _ = base64.StdEncoding.Decode(s, src)
 }
 
 func (s Secret) GetHash() [64]byte {

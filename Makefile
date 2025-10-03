@@ -26,6 +26,7 @@ confirm:
 .PHONY: run/api
 run/api:
 	./hack/test/docker-postgres.sh
+	./hack/test/kafka-setup.sh
 
 	@go run ./cmd/api -db-dsn=${POSTGRES_TEST_DSN}
 
@@ -67,6 +68,7 @@ test/data:
 .PHONY: test/api
 test/api:
 	./hack/test/docker-postgres.sh
+	./hack/test/kafka-setup.sh
 
 	@go test ./cmd/api -v -dsn=${POSTGRES_TEST_DSN}
 
@@ -74,6 +76,7 @@ test/api:
 .PHONY: test/all
 test/all:
 	./hack/test/docker-postgres.sh
+	./hack/test/kafka-setup.sh
 
 	@go test ./internal/data -v -dsn=${POSTGRES_TEST_DSN}
 	@go test ./cmd/api -v -dsn=${POSTGRES_TEST_DSN}

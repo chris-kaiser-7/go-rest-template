@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"net/http"
 	"time"
@@ -76,6 +77,20 @@ func (app *application) createApiKeyHandler(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	keyCopy := newKey
+	keyCopy.Key = data.Secret{}
+	msg, err := json.Marshal(envelope{"NEW_KEY": keyCopy})
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.kafSend(msg)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
 	err = app.writeJSON(w, http.StatusOK, envelope{"apiKey": formatApiKey(newKey, 0)}, defaultHeader)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
@@ -106,6 +121,18 @@ func (app *application) validateApiKeyHandler(w http.ResponseWriter, r *http.Req
 	}
 
 	uses, err := app.models.ApiKeyUsage.GetUsageDataByKey(fetchedKey.Id)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	msg, err := json.Marshal(envelope{"VALIDATED_KEY": formatApiKey(fetchedKey, uses)})
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	err = app.kafSend(msg)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return

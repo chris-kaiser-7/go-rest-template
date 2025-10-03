@@ -17,6 +17,7 @@ import (
 	"github.com/chris-a-kaiser-7/go-rest-template/internal/mailer"
 	"github.com/chris-a-kaiser-7/go-rest-template/internal/vcs"
 
+	"github.com/confluentinc/confluent-kafka-go/kafka"
 	_ "github.com/lib/pq"
 )
 
@@ -59,11 +60,12 @@ type config struct {
 // Define an application struct to hold dependencies for our HTTP handlers, helpers, and
 // middleware.
 type application struct {
-	config config
-	logger *jsonlog.Logger
-	models data.DataAccessWrapers
-	mailer mailer.Mailer
-	wg     sync.WaitGroup
+	config        config
+	logger        *jsonlog.Logger
+	models        data.DataAccessWrapers
+	mailer        mailer.Mailer
+	wg            sync.WaitGroup
+	kafkaProducer *kafka.Producer
 }
 
 func main() {
@@ -169,12 +171,37 @@ func main() {
 
 	initDefaultHeader()
 
+	p, err := kafka.NewProducer(&kafka.ConfigMap{
+		"bootstrap.servers": "localhost:9092",
+		"client.id":         "myProducer",
+		"acks":              "all"})
+
+	go func() {
+		for e := range p.Events() {
+			switch ev := e.(type) {
+			case *kafka.Message:
+				if ev.TopicPartition.Error != nil {
+					fmt.Printf("Failed to deliver message: %v\n", ev.TopicPartition)
+				} else {
+					fmt.Printf("Successfully produced record to topic %s partition [%d] @ offset %v\n",
+						*ev.TopicPartition.Topic, ev.TopicPartition.Partition, ev.TopicPartition.Offset)
+				}
+			}
+		}
+	}()
+
+	if err != nil {
+		fmt.Printf("Failed to create producer: %s\n", err)
+		os.Exit(0)
+	}
+
 	// Declare an instance of the application struct, containing the config struct and the infoLog.
 	app := &application{
-		config: cfg,
-		logger: logger,
-		models: data.InitDataAccess(db),
-		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
+		config:        cfg,
+		logger:        logger,
+		models:        data.InitDataAccess(db),
+		mailer:        mailer.New(cfg.smtp.host, cfg.smtp.port, cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
+		kafkaProducer: p,
 	}
 
 	// Call app.server() to start the server.
