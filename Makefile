@@ -1,7 +1,7 @@
 # Include env variables
 
 include .envrc
-POSTGRES_TEST_DSN ?= 'pfostgres://postgres:postgres@localhost:5433/testdb?sslmode=disable'
+POSTGRES_TEST_DSN ?= 'postgres://postgres:postgres@localhost:5433/testdb?sslmode=disable'
 
 
 # ==================================================================================== #
@@ -29,6 +29,19 @@ run/api:
 	./hack/test/kafka-setup.sh
 
 	@go run ./cmd/api -db-dsn=${POSTGRES_TEST_DSN}
+
+## run/grpc/server: run the cmd/api application
+.PHONY: run/grpc/server
+run/grpc/server:
+	./hack/test/docker-postgres.sh
+	./hack/test/kafka-setup.sh
+
+	@go run ./cmd/grpc/server -db-dsn=${POSTGRES_TEST_DSN}
+
+## run/grpc/client: run the cmd/api application
+.PHONY: run/grpc/client
+run/grpc/client:
+	@go run ./cmd/clients/grcp 
 
 ## db/psql: connect to the database using psql
 .PHONY: db/psql

@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+package grpc.examples.echo;
+
+option go_package = "github.com/chris-a-kaiser-7/go-rest-template/cmd/grpc/proto/user";
+
+//
+message User {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+}
+// Request and Response messages
+message AddUserRequest {
+  string name = 1;
+  string email = 2;
+  string password = 3;
+}
+message AddUserResponse {
+  string id = 1;
+  bool success = 2;
+  string message = 3;
+}
+message GetUserRequest {
+  string id = 1;
+}
+message GetUserResponse {
+  User user = 1;
+  bool found = 2;
+}
+message ActivateUserRequest {
+  string id = 1;
+  string token = 2;
+}
+
+// Service definition
+service UserManager {
+  rpc RegisterUser(AddUserRequest) returns (AddUserResponse);
+  rpc GetUser(GetUserRequest) returns (GetUserResponse);
+  rpc ActivateUser(GetUserRequest) returns (AddUserResponse);
+}

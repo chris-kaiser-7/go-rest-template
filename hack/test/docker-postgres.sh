@@ -32,7 +32,7 @@ until docker exec "$CONTAINER_NAME" pg_isready -U "$POSTGRES_USER" > /dev/null 2
   sleep 1
 done
 
-sleep 3
+sleep 10
 
 docker exec "test-postgres" psql --username=postgres -d testdb -c "CREATE EXTENSION IF NOT EXISTS citext"
 
